@@ -105,6 +105,18 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;d
 .empty{text-align:center;padding:20px;color:#aaa;font-size:12px}
 .ap-card{background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:10px 12px;margin-bottom:6px}
 .ap-card.next{border-color:#0284c7;border-width:2px}
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.cal-dh{text-align:center;font-size:11px;font-weight:bold;color:#888;padding:5px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
+.cal-day{background:#fff;border:1px solid #eee;border-radius:6px;padding:5px;min-height:78px;cursor:pointer;transition:border-color .15s}
+.cal-day:hover{border-color:#CC0000}
+.cal-day.today{border-color:#CC0000;border-width:2px}
+.cal-day.selected{border-color:#8b5cf6;border-width:2px;background:#faf5ff}
+.cal-day.other-month{background:#f9f9f9}
+.cal-day.other-month .cal-day-num{color:#ccc}
+.cal-day-num{font-size:11px;font-weight:bold;color:#444;margin-bottom:3px}
+.cal-day.today .cal-day-num{color:#CC0000}
+.cal-event{font-size:9px;padding:2px 4px;border-radius:3px;margin-bottom:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:1.4}
 </style>
 </head>
 <body>
@@ -129,6 +141,7 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;d
   <button class="tab" onclick="sw('depot',this)">דיפו + מחירון</button>
   <button class="tab" onclick="sw('activities',this)">פעילויות</button>
   <button class="tab" onclick="sw('daily',this)">סדר יום</button>
+  <button class="tab" onclick="sw('calendar',this)" style="color:#8b5cf6">📅 לוח שנה</button>
   <button class="tab" onclick="sw('plan',this)">יעדים</button>
   <button class="tab" onclick="sw('settings',this)" style="color:#d97706">⚙ הגדרות</button>
 </div>
@@ -375,6 +388,10 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;d
   </div>
 </div>
 
+<div class="page" id="p-calendar">
+  <div id="cal-content"></div>
+</div>
+
 <script>
 // ===== DATA =====
 var PL0 = [
@@ -416,7 +433,7 @@ var PL0 = [
 
 var DEFS = {
   contacts:[],activities:[],agreements:[],tasks:[],orders:[],airportMeetings:[],
-  kpis:{m:0,c:0,d:0,ap:0},checks:{},dayType:"office",
+  kpis:{m:0,c:0,d:0,ap:0},checks:{},dayTypes:{},dayType:"office",
   pricelist:null,
   settings:{
     m_min:5,m_max:10,c_min:20,c_max:40,d_min:1,
@@ -433,6 +450,7 @@ try {
   if (raw) {
     D = JSON.parse(raw);
     if (!D.settings) D.settings = DEFS.settings;
+    if (!D.dayTypes) D.dayTypes = {};
     if (!D.pricelist || !D.pricelist.length) D.pricelist = JSON.parse(JSON.stringify(PL0));
   } else {
     D.pricelist = JSON.parse(JSON.stringify(PL0));
@@ -498,7 +516,7 @@ function sw(id, btn) {
     dash: renderDash, leads: renderLeads, agreements: renderAgreements,
     tasks: renderTasks, airport: renderAirport, hotels: renderHotels,
     depot: renderDepot, activities: renderActivities, daily: renderDaily,
-    plan: renderPlan, settings: renderSettings
+    plan: renderPlan, settings: renderSettings, calendar: renderCalendar
   };
   if (renders[id]) renders[id]();
 }
@@ -842,7 +860,7 @@ function renderActivities() {
 function delAct(id) { D.activities = D.activities.filter(function(a) { return a.id !== id; }); sv(); renderActivities(); }
 
 // ===== DAILY =====
-function setDT(t) { D.dayType = t; sv(); renderDaily(); }
+function setDT(t) { D.dayType = t; if (!D.dayTypes) D.dayTypes = {}; D.dayTypes[todayStr] = t; sv(); renderDaily(); }
 function renderDaily() {
   var wn = Math.min(Math.floor((today.getDate() - 1) / 7), 3), ws = WS[wn];
   var seg = document.getElementById("daily-seg");
@@ -869,6 +887,8 @@ function renderDaily() {
 }
 function togChk(i, el) {
   if (!D.checks[todayStr]) D.checks[todayStr] = {};
+  if (!D.dayTypes) D.dayTypes = {};
+  D.dayTypes[todayStr] = D.dayType;
   D.checks[todayStr]["k" + i] = !D.checks[todayStr]["k" + i];
   el.classList.toggle("done", D.checks[todayStr]["k" + i]);
   el.textContent = D.checks[todayStr]["k" + i] ? "✓" : "";
@@ -1102,6 +1122,145 @@ function saveForm(type, wrId) {
     sv(); document.getElementById(wrId).innerHTML = ""; renderDepot(); renderDash();
     alert("הזמנה נשמרה ✓ | ₪" + Math.round(total2).toLocaleString());
   }
+}
+
+// ===== CALENDAR =====
+var calYear = today.getFullYear(), calMonth = today.getMonth();
+var calSelDay = null;
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  calSelDay = null;
+  renderCalendar();
+}
+
+function calSelectDay(ds) {
+  calSelDay = (calSelDay === ds) ? null : ds;
+  renderCalendar();
+}
+
+function getCalEvents(ds) {
+  var events = [];
+  var dayType = (D.dayTypes || {})[ds] || "office";
+  var chk = D.checks[ds] || {};
+  var apChk = D.checks["ap_" + ds] || {};
+  var doneCount = Object.keys(chk).filter(function(k) { return k.startsWith("k") && chk[k]; }).length;
+  if (doneCount > 0) {
+    var total = dayType === "office" ? OCHK.length : FCHK.length;
+    events.push({ label: "✅ צ'קליסט: " + doneCount + "/" + total, bg: "#dcfce7", col: "#166534" });
+  }
+  var apDone = Object.values(apChk).filter(Boolean).length;
+  if (apDone > 0) {
+    events.push({ label: "✈ הכנה: " + apDone + "/" + AP_CHK.length, bg: "#e0f2fe", col: "#0369a1" });
+  }
+  D.airportMeetings.filter(function(m) { return m.date === ds; }).forEach(function(m) {
+    events.push({ label: "✈ " + (m.agent || "שדה תעופה"), bg: "#dbeafe", col: "#1e40af" });
+  });
+  D.tasks.filter(function(t) { return t.due_date === ds; }).forEach(function(t) {
+    var ov = ds < todayStr && t.status !== "completed";
+    events.push({
+      label: (t.status === "completed" ? "✓ " : "📋 ") + t.title,
+      bg: ov ? "#fee2e2" : (t.status === "completed" ? "#dcfce7" : "#fef9c3"),
+      col: ov ? "#991b1b" : (t.status === "completed" ? "#166534" : "#854d0e")
+    });
+  });
+  return events;
+}
+
+function renderCalendar() {
+  var container = document.getElementById("cal-content");
+  if (!container) return;
+  var monthNames = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  var dayNames = ["א'","ב'","ג'","ד'","ה'","ו'","ש'"];
+  var headerHTML = '<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between">' +
+    '<button class="btn btn-gray btn-sm" onclick="calNav(-1)">◀ הקודם</button>' +
+    '<div style="font-size:16px;font-weight:bold">' + monthNames[calMonth] + ' ' + calYear + '</div>' +
+    '<button class="btn btn-gray btn-sm" onclick="calNav(1)">הבא ▶</button>' +
+    '</div></div>';
+  var dayHeaderHTML = '<div class="cal-header">' + dayNames.map(function(d) { return '<div class="cal-dh">' + d + '</div>'; }).join("") + '</div>';
+  var firstDay = new Date(calYear, calMonth, 1);
+  var lastDay = new Date(calYear, calMonth + 1, 0);
+  var startPad = firstDay.getDay();
+  var cells = [];
+  for (var p = startPad - 1; p >= 0; p--) {
+    cells.push({ date: new Date(calYear, calMonth, -p), thisMonth: false });
+  }
+  for (var d2 = 1; d2 <= lastDay.getDate(); d2++) {
+    cells.push({ date: new Date(calYear, calMonth, d2), thisMonth: true });
+  }
+  while (cells.length % 7 !== 0) {
+    var nd = cells.length - lastDay.getDate() - startPad + 1;
+    cells.push({ date: new Date(calYear, calMonth + 1, nd), thisMonth: false });
+  }
+  var gridHTML = '<div class="cal-grid">' + cells.map(function(cell) {
+    var ds = cell.date.toISOString().split("T")[0];
+    var isToday = ds === todayStr;
+    var isSel = ds === calSelDay;
+    var cls = "cal-day" + (isToday ? " today" : "") + (!cell.thisMonth ? " other-month" : "") + (isSel ? " selected" : "");
+    var events = getCalEvents(ds);
+    var evHTML = events.slice(0, 2).map(function(ev) {
+      return '<div class="cal-event" style="background:' + ev.bg + ';color:' + ev.col + '">' + ev.label + '</div>';
+    }).join("");
+    if (events.length > 2) evHTML += '<div style="font-size:9px;color:#888">+' + (events.length - 2) + ' עוד</div>';
+    return '<div class="' + cls + '" onclick="calSelectDay(\'' + ds + '\')">' +
+      '<div class="cal-day-num">' + cell.date.getDate() + '</div>' + evHTML + '</div>';
+  }).join("") + '</div>';
+  var detailHTML = calSelDay ? buildCalDetail(calSelDay) : "";
+  container.innerHTML = headerHTML + dayHeaderHTML + gridHTML + detailHTML;
+}
+
+function buildCalDetail(ds) {
+  var dayType = (D.dayTypes || {})[ds] || "office";
+  var checkList = dayType === "office" ? OCHK : FCHK;
+  var chk = D.checks[ds] || {};
+  var apChk = D.checks["ap_" + ds] || {};
+  var tasks = D.tasks.filter(function(t) { return t.due_date === ds; });
+  var apMeetings = D.airportMeetings.filter(function(m) { return m.date === ds; });
+  var doneItems = Object.keys(chk).filter(function(k) { return k.startsWith("k") && chk[k]; }).sort();
+  var apDoneItems = Object.keys(apChk).filter(function(k) { return apChk[k]; }).sort();
+  var html = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+    '<div style="font-size:14px;font-weight:bold">📅 ' + ds + (dayType === "field" ? '  <span class="badge b-build">יום שטח</span>' : '  <span class="badge b-other">יום משרד</span>') + '</div>' +
+    '<button onclick="calSelDay=null;renderCalendar()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa">×</button></div>';
+  if (doneItems.length > 0) {
+    html += '<div style="margin-bottom:12px"><div class="info info-green" style="margin-bottom:6px">✅ צ\'קליסט יומי — ' + doneItems.length + '/' + checkList.length + ' הושלמו</div>';
+    doneItems.forEach(function(k) {
+      var idx = parseInt(k.slice(1));
+      html += '<div style="font-size:12px;padding:3px 0;color:#555;display:flex;align-items:center;gap:6px"><div class="cb done">✓</div>' + (checkList[idx] || ("פריט " + (idx + 1))) + '</div>';
+    });
+    html += '</div>';
+  }
+  if (apDoneItems.length > 0) {
+    html += '<div style="margin-bottom:12px"><div class="info info-ap" style="margin-bottom:6px">✈ צ\'קליסט הכנה לשדה תעופה — ' + apDoneItems.length + '/' + AP_CHK.length + '</div>';
+    apDoneItems.forEach(function(k) {
+      var idx = parseInt(k.slice(1));
+      html += '<div style="font-size:12px;padding:3px 0;color:#555;display:flex;align-items:center;gap:6px"><div class="cb done" style="background:#0284c7;border-color:#0284c7">✓</div>' + (AP_CHK[idx] || ("פריט " + (idx + 1))) + '</div>';
+    });
+    html += '</div>';
+  }
+  if (apMeetings.length > 0) {
+    html += '<div style="margin-bottom:12px"><div class="info info-ap" style="margin-bottom:6px">✈ פגישות שדה תעופה</div>';
+    apMeetings.forEach(function(m) {
+      html += '<div class="ap-card"><div style="font-size:12px;font-weight:bold;color:#0284c7">' + (m.time || "") + (m.time && m.agent ? " — " : "") + (m.agent || "שדה תעופה") + '</div>' +
+        (m.location ? '<div style="font-size:11px;color:#888">' + m.location + '</div>' : '') +
+        (m.notes ? '<div style="font-size:11px;color:#888">' + m.notes + '</div>' : '') + '</div>';
+    });
+    html += '</div>';
+  }
+  if (tasks.length > 0) {
+    html += '<div style="margin-bottom:12px"><div class="info info-amber" style="margin-bottom:6px">📋 משימות ליום זה</div>';
+    tasks.forEach(function(t) {
+      var done = t.status === "completed";
+      html += '<div style="font-size:12px;padding:4px 0;display:flex;align-items:center;gap:6px"><div class="cb ' + (done ? "done" : "") + '">' + (done ? "✓" : "") + '</div><span class="' + (done ? "done-text" : "") + '">' + t.title + '</span>' + (t.assigned ? '<span style="font-size:10px;color:#888"> — ' + t.assigned + '</span>' : '') + '</div>';
+    });
+    html += '</div>';
+  }
+  if (doneItems.length === 0 && apDoneItems.length === 0 && apMeetings.length === 0 && tasks.length === 0) {
+    html += '<div class="empty">אין פעילויות מסומנות ביום זה</div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 // ===== INIT =====
