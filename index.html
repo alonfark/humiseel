@@ -130,6 +130,7 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;d
   <button class="tab" onclick="sw('activities',this)">פעילויות</button>
   <button class="tab" onclick="sw('daily',this)">סדר יום</button>
   <button class="tab" onclick="sw('plan',this)">יעדים</button>
+  <button class="tab" onclick="sw('calendar',this)" style="color:#0369a1">📅 כלנדר</button>
   <button class="tab" onclick="sw('settings',this)" style="color:#d97706">⚙ הגדרות</button>
 </div>
 
@@ -151,6 +152,26 @@ body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;d
   </div>
   <div class="card"><div class="card-title">🔄 Pipeline</div><div class="pipe" id="d-pipe"></div></div>
   <div class="card"><div class="card-title">📋 פעילות אחרונה</div><div id="d-acts"></div></div>
+</div>
+
+<div class="page" id="p-calendar">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="calChg(-1)">◀</button>
+      <div style="font-size:15px;font-weight:700" id="cal-title"></div>
+      <button class="btn btn-ghost btn-sm" onclick="calChg(1)">▶</button>
+      <button class="btn btn-ghost btn-sm" onclick="calToday()">היום</button>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center">
+      <div style="display:flex;gap:3px">
+        <button class="btn btn-sm" id="cv-week" onclick="setCalV('week',this)" style="font-size:11px">שבוע</button>
+        <button class="btn btn-r btn-sm" id="cv-day" onclick="setCalV('day',this)" style="font-size:11px">יום</button>
+      </div>
+      <button class="btn btn-r btn-sm" onclick="openCalForm()">+ אירוע</button>
+    </div>
+  </div>
+  <div id="cal-fw" style="margin-bottom:10px"></div>
+  <div id="cal-container"></div>
 </div>
 
 <div class="page" id="p-leads">
@@ -524,6 +545,176 @@ function getNextAP() {
 function updKpi(k, v) { v = parseInt(v) || 0; D.kpis[k] = v; sv(); updTB(); renderPlanProg(); }
 
 // ===== DASHBOARD =====
+
+// ============================================================
+// CALENDAR — שעות ותאריכים מדויקים
+// ============================================================
+var calView = "week"; // week | day
+var HOURS = ["08","09","10","11","12","13","14","15","16","17","18","19"];
+var MONTH_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+var DAY_HE = ["א","ב","ג","ד","ה","ו","ש"];
+var DAY_FULL = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+
+if(!D.calY) D.calY = today.getFullYear();
+if(D.calM === undefined) D.calM = today.getMonth();
+if(!D.calD) D.calD = today.getDate();
+
+function calChg(dir) {
+  if(calView === "day") {
+    var d = new Date(D.calY, D.calM, D.calD + dir);
+    D.calY = d.getFullYear(); D.calM = d.getMonth(); D.calD = d.getDate();
+  } else {
+    var d2 = new Date(D.calY, D.calM, D.calD + dir * 7);
+    D.calY = d2.getFullYear(); D.calM = d2.getMonth(); D.calD = d2.getDate();
+  }
+  sv(); renderCalendar();
+}
+function calToday() { D.calY = today.getFullYear(); D.calM = today.getMonth(); D.calD = today.getDate(); sv(); renderCalendar(); }
+function setCalV(v, btn) { calView = v; document.querySelectorAll("#cv-week,#cv-day").forEach(function(b){b.className="btn btn-ghost btn-sm";b.style.fontSize="11px";}); if(btn){btn.className="btn btn-r btn-sm";btn.style.fontSize="11px";} renderCalendar(); }
+
+function getCalEvents(ds) {
+  var evs = [];
+  // From activities
+  D.activities.filter(function(a){ return a.date === ds; }).forEach(function(a){
+    evs.push({ title: a.subject, time: a.time || "09:00", color: SEGC[a.segment||"general"]||"#2563eb", id: a.id, type: "activity" });
+  });
+  // From tasks (with due_date)
+  D.tasks.filter(function(t){ return t.due_date === ds && t.status !== "completed"; }).forEach(function(t){
+    evs.push({ title: t.title, time: "09:00", color: "#b45309", id: t.id, type: "task" });
+  });
+  // Airport meetings
+  D.airportMeetings.filter(function(m){ return m.date === ds; }).forEach(function(m){
+    evs.push({ title: "✈ שדה תעופה" + (m.agent ? " — " + m.agent : ""), time: m.time || "10:00", color: "#0284c7", id: m.id, type: "airport" });
+  });
+  // Completed checklist items from daily
+  var chkKey = "humi_chk_" + ds;
+  var chk = D.checks[chkKey] || {};
+  var checks = D.dayType === "office" ? OCHK : FCHK;
+  Object.keys(chk).forEach(function(k) {
+    if(chk[k]) {
+      var i = parseInt(k.replace("k",""));
+      if(checks[i]) {
+        evs.push({ title: "✓ " + checks[i], time: "09:00", color: "#15803d", id: "chk_" + ds + "_" + i, type: "checklist" });
+      }
+    }
+  });
+  return evs.sort(function(a,b){ return (a.time||"").localeCompare(b.time||""); });
+}
+
+function renderCalendar() {
+  var cont = document.getElementById("cal-container");
+  if(!cont) return;
+  if(calView === "week") renderCalWeek(cont);
+  else renderCalDay(cont);
+}
+
+function renderCalWeek(cont) {
+  // Get 7 days starting from Sunday of current week
+  var baseDate = new Date(D.calY, D.calM, D.calD);
+  var startOfWeek = new Date(baseDate);
+  startOfWeek.setDate(baseDate.getDate() - baseDate.getDay());
+  
+  var days = [];
+  for(var i = 0; i < 7; i++) {
+    var d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    days.push(d);
+  }
+  
+  document.getElementById("cal-title").textContent = MONTH_HE[days[0].getMonth()] + " — " + MONTH_HE[days[6].getMonth()] + " " + D.calY;
+  
+  var wn = Math.min(Math.floor((today.getDate()-1)/7), 3);
+  var ws = WS[wn];
+  
+  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px;font-size:12px">';
+  // Header row
+  html += '<thead><tr><th style="width:52px;background:var(--gray-l);border:1px solid var(--border);padding:6px;font-size:10px;color:var(--txt2)">שעה</th>';
+  days.forEach(function(d) {
+    var ds = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    var isT = ds === todayStr;
+    var wni = Math.min(Math.floor((d.getDate()-1)/7), 3);
+    html += '<th style="background:' + (isT ? "#fff1f2" : "var(--gray-l)") + ';border:1px solid var(--border);padding:6px;text-align:center;min-width:90px;cursor:pointer;border-bottom:3px solid ' + WS[wni][3] + '" onclick="D.calD=' + d.getDate() + ';D.calM=' + d.getMonth() + ';D.calY=' + d.getFullYear() + ';setCalV('day',document.getElementById('cv-day'))">';
+    html += '<div style="font-size:10px;color:' + (isT ? "#CC0000" : "var(--txt2)") + ';font-weight:700">' + DAY_HE[d.getDay()] + '</div>';
+    html += '<div style="font-size:14px;font-weight:800;color:' + (isT ? "#CC0000" : "var(--txt)") + '">' + d.getDate() + '</div>';
+    html += '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  
+  // Hour rows
+  HOURS.forEach(function(h) {
+    html += '<tr>';
+    html += '<td style="background:var(--gray-l);border:1px solid var(--border);padding:4px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--txt2);white-space:nowrap">' + h + ':00</td>';
+    days.forEach(function(d) {
+      var ds = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+      var isT = ds === todayStr;
+      var evs = getCalEvents(ds).filter(function(e){ return (e.time||"").startsWith(h); });
+      html += '<td style="border:1px solid var(--border);padding:2px 3px;vertical-align:top;min-height:36px;background:' + (isT ? "#fff8f8" : "#fff") + ';cursor:pointer" onclick="openCalFormAt('' + ds + '',' + h + ')">';
+      evs.forEach(function(e) {
+        html += '<div style="background:' + e.color + '22;color:' + e.color + ';border-right:2.5px solid ' + e.color + ';border-radius:4px;padding:2px 5px;margin-bottom:2px;font-size:10px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="' + e.title + '">' + e.title + '</div>';
+      });
+      html += '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function renderCalDay(cont) {
+  var ds = D.calY + "-" + String(D.calM+1).padStart(2,"0") + "-" + String(D.calD).padStart(2,"0");
+  var d = new Date(D.calY, D.calM, D.calD);
+  var isT = ds === todayStr;
+  var wn = Math.min(Math.floor((d.getDate()-1)/7), 3);
+  var ws = WS[wn];
+  
+  document.getElementById("cal-title").textContent = DAY_FULL[d.getDay()] + ", " + d.getDate() + " " + MONTH_HE[d.getMonth()] + " " + D.calY;
+  
+  var allEvs = getCalEvents(ds);
+  
+  var html = '<div style="max-width:600px">';
+  // Day segment banner
+  html += '<div style="background:' + ws[2] + ';border-right:3px solid ' + ws[3] + ';border-radius:6px;padding:7px 12px;margin-bottom:10px;font-size:12px;font-weight:600;color:' + ws[3] + '">' + ws[0] + ' — ' + ws[1] + '</div>';
+  
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+  HOURS.forEach(function(h) {
+    var evs = allEvs.filter(function(e){ return (e.time||"").startsWith(h); });
+    html += '<div style="display:flex;border-bottom:1px solid #f1f5f9;min-height:52px">';
+    html += '<div style="width:52px;background:var(--gray-l);border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt2);flex-shrink:0">' + h + ':00</div>';
+    html += '<div style="flex:1;padding:3px 5px;cursor:pointer" onclick="openCalFormAt('' + ds + '',' + h + ')">';
+    if(evs.length === 0) {
+      html += '<div style="height:46px"></div>';
+    }
+    evs.forEach(function(e) {
+      html += '<div style="background:' + e.color + '18;color:' + e.color + ';border-right:3px solid ' + e.color + ';border-radius:5px;padding:5px 8px;margin-bottom:3px">';
+      html += '<div style="font-size:12px;font-weight:700">' + e.title + '</div>';
+      html += '<div style="font-size:10px;opacity:.8">' + (e.time || "") + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  
+  if(allEvs.length === 0) {
+    html += '<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px;margin-top:10px">לחץ על שעה להוספת אירוע</div>';
+  }
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+function openCalForm() { openCalFormAt(todayStr, 10); }
+function openCalFormAt(ds, h) {
+  var fw = document.getElementById("cal-fw");
+  if(!fw) return;
+  var timeVal = String(h).padStart(2,"0") + ":00";
+  openFW("activity", "cal-fw");
+  setTimeout(function() {
+    var dEl = document.getElementById("af-d");
+    var tEl = document.getElementById("af-time");
+    if(dEl) dEl.value = ds;
+    if(tEl) tEl.value = timeVal;
+  }, 60);
+}
+
 function renderDash() {
   var wn = Math.min(Math.floor((today.getDate() - 1) / 7), 3), ws = WS[wn];
   var hO = D.orders.filter(function(o) { return o.segment === "hotels"; });
@@ -1010,7 +1201,7 @@ function hCalcTotal() {
 function buildDepotOrderBody() {
   var cOpts = D.contacts.map(function(c) { return '<option value="' + c.name + "|" + (c.phone || "") + '">' + c.name + '</option>'; }).join("");
   var allI = []; D.pricelist.forEach(function(cat) { cat.items.forEach(function(it) { allI.push({ cat: cat.cat, n: it.n, p: it.p }); }); });
-  return '<div class="fgrid"><div class="fg"><label>לקוח</label><select onchange="var p=this.value.split(\'|\');var n=document.getElementById(\'dof-n\');if(n)n.value=p[0]||\'\'"><option value="">— בחר —</option>' + cOpts + '</select></div><div class="fg"><label>שם לקוח</label><input id="dof-n"></div><div class="fg"><label>טלפון</label><input id="dof-p"></div></div>' +
+  return '<div class="fgrid"><div class="fg"><label>לקוח</label><select onchange="var p=this.value.split(\'|\');var n=document.getElementById(\'dof-n\');if(n)n.value=p[0]||\'\'"><option value="">— בחר —</option>' + cOpts + '</select></div><div class="fg"><label>שם לקוח</label><input id="dof-n"></div><div class="fg"><label>טלפון</label><input id="dof-p"></div><div class="fg"><label>כתובת למשלוח</label><input id="dof-addr" placeholder="כתובת מלאה"></div></div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><label style="font-size:11px;font-weight:bold;color:#888">פריטים</label><button onclick="addDRow()" class="btn btn-gray btn-sm">+ פריט</button></div>' +
     '<div id="drows"></div>' +
     '<div style="background:#fffbeb;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;margin-bottom:7px"><span style="font-size:12px;color:#888">סה"כ</span><span style="font-size:18px;font-weight:bold;color:#d97706" id="dep-total">₪0</span></div>' +
@@ -1100,8 +1291,115 @@ function saveForm(type, wrId) {
     D.orders.push({ id:u, contact_name:nm2, contact_phone:document.getElementById("dof-p").value, segment:"depot", items:items2, total:total2, notes:document.getElementById("dof-no").value, status:"sent", created:todayStr });
     D.kpis.p = (D.kpis.p || 0) + 1;
     sv(); document.getElementById(wrId).innerHTML = ""; renderDepot(); renderDash();
-    alert("הזמנה נשמרה ✓ | ₪" + Math.round(total2).toLocaleString());
+    // Show delivery note
+    printDeliveryNote({ id:u, contact_name:nm2, contact_phone:document.getElementById("dof-p").value, address:document.getElementById("dof-addr") ? document.getElementById("dof-addr").value : "", segment:"depot", items:items2, total:total2, notes:document.getElementById("dof-no").value, created:todayStr });
   }
+}
+
+// ============================================================
+// תעודת משלוח — DELIVERY NOTE
+// ============================================================
+function printDeliveryNote(order) {
+  var s = D.settings || {};
+  var companyName = s.company_name || "חומי DEPOT";
+  var companyPhone = s.company_phone || "";
+  var companyAddress = s.company_address || "";
+  var companyEmail = s.company_email || "";
+  var docNum = "DN-" + Date.now().toString().slice(-6);
+  var dateStr = new Date().toLocaleDateString("he-IL");
+  
+  var itemsHTML = order.items.map(function(it, i) {
+    return '<tr style="background:' + (i%2===0?"#fff":"#f8fafc") + '">' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:500">' + it.name + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center">' + it.qty + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left">' + (it.unit_price ? "₪" + it.unit_price.toLocaleString() : "לפי שירות") + '</td>' +
+      '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-weight:700">' + (it.line_total ? "₪" + Math.round(it.line_total).toLocaleString() : "—") + '</td>' +
+    '</tr>';
+  }).join("");
+  
+  var w = window.open("", "_blank", "width=800,height:900");
+  w.document.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>תעודת משלוח — ' + order.contact_name + '</title>' +
+    '<style>' +
+    '* { box-sizing: border-box; margin: 0; padding: 0; }' +
+    'body { font-family: Arial, sans-serif; direction: rtl; color: #1e293b; background: #fff; padding: 30px; font-size: 13px; }' +
+    '.header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #CC0000; padding-bottom: 20px; margin-bottom: 24px; }' +
+    '.logo-section { display: flex; flex-direction: column; gap: 4px; }' +
+    '.logo { font-size: 26px; font-weight: 900; color: #CC0000; letter-spacing: 1px; }' +
+    '.company-sub { font-size: 12px; color: #64748b; }' +
+    '.doc-info { text-align: left; }' +
+    '.doc-title { font-size: 18px; font-weight: 800; color: #CC0000; margin-bottom: 6px; }' +
+    '.doc-num { font-size: 12px; color: #64748b; }' +
+    '.section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }' +
+    '.box { background: #f8fafc; border-radius: 8px; padding: 14px; border: 1px solid #e2e8f0; }' +
+    '.box-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 8px; }' +
+    '.box-val { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }' +
+    '.box-sub { font-size: 12px; color: #64748b; }' +
+    'table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }' +
+    'thead { background: #CC0000; }' +
+    'th { padding: 11px 12px; text-align: right; color: #fff; font-size: 12px; font-weight: 700; }' +
+    'th:nth-child(2),th:nth-child(3),th:nth-child(4) { text-align: center; }' +
+    'th:nth-child(3),th:nth-child(4) { text-align: left; }' +
+    '.total-box { background: #fff7ed; border: 2px solid #CC0000; border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }' +
+    '.total-label { font-size: 15px; font-weight: 700; color: #92400e; }' +
+    '.total-val { font-size: 26px; font-weight: 900; color: #CC0000; }' +
+    '.signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }' +
+    '.sig-box { border-top: 2px solid #334155; padding-top: 10px; text-align: center; }' +
+    '.sig-label { font-size: 12px; color: #64748b; font-weight: 600; }' +
+    '.sig-space { height: 50px; }' +
+    '.notes-box { background: #f8fafc; border-radius: 8px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }' +
+    '.footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 12px; }' +
+    '@media print { .no-print { display: none !important; } body { padding: 15px; } }' +
+    '</style></head><body>');
+  
+  w.document.write(
+    '<div class="no-print" style="margin-bottom:16px;display:flex;gap:10px">' +
+    '<button onclick="window.print()" style="padding:9px 22px;background:#CC0000;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">🖨 הדפס תעודת משלוח</button>' +
+    '<button onclick="window.close()" style="padding:9px 16px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;cursor:pointer">סגור</button>' +
+    '</div>' +
+    
+    '<div class="header">' +
+    '<div class="logo-section">' +
+    '<div class="logo">🔴 ' + companyName + '</div>' +
+    (companyPhone ? '<div class="company-sub">📞 ' + companyPhone + '</div>' : "") +
+    (companyAddress ? '<div class="company-sub">📍 ' + companyAddress + '</div>' : "") +
+    (companyEmail ? '<div class="company-sub">✉ ' + companyEmail + '</div>' : "") +
+    '</div>' +
+    '<div class="doc-info">' +
+    '<div class="doc-title">תעודת משלוח</div>' +
+    '<div class="doc-num">מספר: ' + docNum + '</div>' +
+    '<div class="doc-num">תאריך: ' + dateStr + '</div>' +
+    '</div></div>' +
+    
+    '<div class="section">' +
+    '<div class="box"><div class="box-title">פרטי לקוח</div>' +
+    '<div class="box-val">' + order.contact_name + '</div>' +
+    (order.contact_phone ? '<div class="box-sub">📞 ' + order.contact_phone + '</div>' : "") +
+    (order.address ? '<div class="box-sub">📍 ' + order.address + '</div>' : "") +
+    '</div>' +
+    '<div class="box"><div class="box-title">פרטי הזמנה</div>' +
+    '<div class="box-val">' + order.id.slice(-8).toUpperCase() + '</div>' +
+    '<div class="box-sub">תאריך: ' + dateStr + '</div>' +
+    '<div class="box-sub">' + order.items.length + ' פריטים</div>' +
+    '</div></div>' +
+    
+    '<table><thead><tr><th>מוצר / שירות</th><th style="text-align:center">כמות</th><th style="text-align:left">מחיר יח'</th><th style="text-align:left">סה"כ</th></tr></thead><tbody>' +
+    itemsHTML +
+    '</tbody></table>' +
+    
+    '<div class="total-box"><div class="total-label">סה"כ לתשלום</div><div class="total-val">₪' + Math.round(order.total || 0).toLocaleString() + '</div></div>' +
+    
+    (order.notes ? '<div class="notes-box"><strong>הערות:</strong> ' + order.notes + '</div>' : "") +
+    
+    '<div class="signatures">' +
+    '<div class="sig-box"><div class="sig-space"></div><div class="sig-label">חתימת הלקוח ואישור קבלה</div></div>' +
+    '<div class="sig-box"><div class="sig-space"></div><div class="sig-label">חתימת נציג חומי</div></div>' +
+    '</div>' +
+    
+    '<div class="footer">' + companyName + ' • ' + dateStr + ' • תעודה מספר: ' + docNum + '</div>' +
+    '</body></html>'
+  );
+  w.document.close();
+  setTimeout(function() { w.print(); }, 500);
 }
 
 // ===== INIT =====
