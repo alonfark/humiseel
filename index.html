@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>חומי CRM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;font-size:14px;direction:rtl}
+.topbar{background:#CC0000;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:18px;font-weight:bold}
+.kpis-top{display:flex;gap:14px}
+.kt{text-align:center}
+.kt-v{font-size:20px;font-weight:bold}
+.kt-l{font-size:9px;opacity:.8}
+.nav{background:#fff;border-bottom:2px solid #ddd;display:flex;overflow-x:auto;padding:0 10px}
+.tab{padding:10px 14px;font-size:12px;font-weight:bold;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;color:#666;font-family:Arial,sans-serif;white-space:nowrap}
+.tab:hover{color:#CC0000}
+.tab.on{color:#CC0000;border-bottom-color:#CC0000}
+.page{display:none;padding:16px}
+.page.on{display:block}
+.card{background:#fff;border-radius:8px;border:1px solid #ddd;padding:14px;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:bold;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:580px){.grid2{grid-template-columns:1fr}}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center}
+.kpi-v{font-size:22px;font-weight:bold;margin-bottom:2px}
+.kpi-l{font-size:10px;color:#888}
+.btn{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:bold;font-family:Arial,sans-serif}
+.btn-red{background:#CC0000;color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-gold{background:#d97706;color:#fff}
+.btn-gray{background:#f1f5f9;color:#555;border:1px solid #ddd}
+.btn-sm{padding:4px 10px;font-size:11px}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:bold;white-space:nowrap}
+.b-new{background:#dbeafe;color:#1e40af}
+.b-prog{background:#fef9c3;color:#854d0e}
+.b-prop{background:#ede9fe;color:#5b21b6}
+.b-wait{background:#ffedd5;color:#9a3412}
+.b-done{background:#dcfce7;color:#166534}
+.b-lost{background:#fee2e2;color:#991b1b}
+.b-hotel{background:#dbeafe;color:#1e40af}
+.b-depot{background:#fef9c3;color:#854d0e}
+.b-build{background:#ffedd5;color:#9a3412}
+.b-service{background:#dcfce7;color:#166534}
+.b-other{background:#f1f5f9;color:#555}
+.b-signed{background:#dcfce7;color:#166534}
+.b-wsig{background:#ede9fe;color:#5b21b6}
+.b-stuck{background:#fee2e2;color:#991b1b}
+.b-draft{background:#f1f5f9;color:#555}
+.b-sent{background:#dbeafe;color:#1e40af}
+.b-comp{background:#dcfce7;color:#166534}
+.b-inprog{background:#fef9c3;color:#854d0e}
+.b-open{background:#f1f5f9;color:#555}
+.b-ap{background:#e0f2fe;color:#0369a1}
+.pipe{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.pcol{min-width:155px;background:#f8fafc;border-radius:8px;padding:8px;flex-shrink:0}
+.pcol-h{font-size:10px;font-weight:bold;color:#888;margin-bottom:6px;display:flex;justify-content:space-between;text-transform:uppercase}
+.pcard{background:#fff;border:1px solid #ddd;border-radius:6px;padding:7px 9px;margin-bottom:5px;cursor:pointer}
+.pcard:hover{border-color:#CC0000}
+.pcard-name{font-size:12px;font-weight:bold;margin-bottom:2px}
+.pcard-meta{font-size:10px;color:#888}
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.fg label{font-size:11px;font-weight:bold;color:#666}
+.fg input,.fg select,.fg textarea{padding:7px 9px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial,sans-serif;background:#fff;color:#222}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#CC0000}
+.fg textarea{resize:vertical;min-height:52px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.chk-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.chk-row:last-child{border-bottom:none}
+.cb{width:15px;height:15px;border:2px solid #ddd;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:9px;color:#fff}
+.cb.done{background:#16a34a;border-color:#16a34a}
+.done-text{text-decoration:line-through;opacity:.4}
+.tl{padding-right:18px;border-right:2px solid #eee}
+.tl-item{padding-right:16px;margin-bottom:12px;position:relative}
+.tl-item::before{content:"";position:absolute;right:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#CC0000;border:2px solid #fff}
+.tl-time{font-size:10px;color:#888;font-weight:bold}
+.tl-label{font-size:13px;font-weight:bold;margin:2px 0}
+.tl-sub{font-size:11px;color:#888;line-height:1.4}
+.info{border-radius:6px;padding:9px 12px;font-size:12px;font-weight:bold;margin-bottom:10px;border-right:4px solid}
+.info-blue{background:#eff6ff;color:#1e40af;border-color:#3b82f6}
+.info-amber{background:#fffbeb;color:#92400e;border-color:#f59e0b}
+.info-green{background:#f0fdf4;color:#166534;border-color:#22c55e}
+.info-red{background:#fff1f2;color:#9f1239;border-color:#f43f5e}
+.info-ap{background:#f0f9ff;color:#0369a1;border-color:#0284c7}
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.prog-track{flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;max-width:80px}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s}
+.price-cat{margin-bottom:14px}
+.price-cat-h{font-size:10px;font-weight:bold;color:#888;text-transform:uppercase;padding:5px 0;border-bottom:1px solid #ddd;margin-bottom:6px;display:flex;justify-content:space-between}
+.price-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid #f5f5f5}
+.price-row:last-child{border-bottom:none}
+.price-inp{padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;width:70px;text-align:center}
+.drow{display:grid;grid-template-columns:1fr 58px 74px 68px 22px;gap:4px;align-items:center;margin-bottom:4px}
+.drow input{padding:5px 7px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial,sans-serif}
+.hotel-row{background:#f8fafc;border:1px solid #ddd;border-radius:6px;padding:9px;margin-bottom:6px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap}
+.set-row:last-child{border-bottom:none}
+.set-label{font-size:12px;font-weight:bold}
+.set-sub{font-size:10px;color:#888}
+.set-inp{padding:6px 9px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:Arial,sans-serif}
+.fw-wrap{margin-bottom:10px}
+.empty{text-align:center;padding:20px;color:#aaa;font-size:12px}
+.ap-card{background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:10px 12px;margin-bottom:6px}
+.ap-card.next{border-color:#0284c7;border-width:2px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🔴 חומי CRM</div>
+  <div class="kpis-top">
+    <div class="kt"><div class="kt-v" id="tb-m" style="color:#fca5a5">0</div><div class="kt-l">פגישות</div></div>
+    <div class="kt"><div class="kt-v" id="tb-c" style="color:#86efac">0</div><div class="kt-l">שיחות</div></div>
+    <div class="kt"><div class="kt-v" id="tb-d" style="color:#fcd34d">0</div><div class="kt-l">הסכמים</div></div>
+    <div class="kt"><div class="kt-v" id="tb-t" style="color:#fca5a5">0</div><div class="kt-l">משימות</div></div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="tab on" onclick="sw('dash',this)">דשבורד</button>
+  <button class="tab" onclick="sw('leads',this)">לידים</button>
+  <button class="tab" onclick="sw('agreements',this)">הסכמים</button>
+  <button class="tab" onclick="sw('tasks',this)">משימות</button>
+  <button class="tab" onclick="sw('airport',this)" style="color:#0284c7">✈ שדה תעופה</button>
+  <button class="tab" onclick="sw('hotels',this)">מלוניות</button>
+  <button class="tab" onclick="sw('depot',this)">דיפו + מחירון</button>
+  <button class="tab" onclick="sw('activities',this)">פעילויות</button>
+  <button class="tab" onclick="sw('daily',this)">סדר יום</button>
+  <button class="tab" onclick="sw('plan',this)">יעדים</button>
+  <button class="tab" onclick="sw('settings',this)" style="color:#d97706">⚙ הגדרות</button>
+</div>
+
+<div class="page on" id="p-dash">
+  <div class="kpi-grid" id="d-kpis"></div>
+  <div id="d-ap-banner" class="info info-ap" style="cursor:pointer" onclick="sw('airport',document.querySelectorAll('.tab')[4])"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚡ עדכון מהיר
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="btn btn-red btn-sm" onclick="qAdd('m')">+ פגישה</button>
+          <button class="btn btn-green btn-sm" onclick="qAdd('c')">+ שיחה</button>
+          <button class="btn btn-gold btn-sm" onclick="qAdd('d')">+ הסכם</button>
+        </div>
+      </div>
+      <div id="d-prog"></div>
+    </div>
+    <div class="card"><div class="card-title">⚠ משימות דחופות</div><div id="d-urgent"></div></div>
+  </div>
+  <div class="card"><div class="card-title">🔄 Pipeline</div><div class="pipe" id="d-pipe"></div></div>
+  <div class="card"><div class="card-title">📋 פעילות אחרונה</div><div id="d-acts"></div></div>
+</div>
+
+<div class="page" id="p-leads">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="leads-fb">
+      <button class="btn btn-red btn-sm on-btn" onclick="filterL(null,this)">הכל</button>
+      <button class="btn btn-gray btn-sm" onclick="filterL('build',this)">בנייה</button>
+      <button class="btn btn-gray btn-sm" onclick="filterL('service',this)">שירותי קרקע</button>
+      <button class="btn btn-gray btn-sm" onclick="filterL('depot',this)">דיפו</button>
+      <button class="btn btn-gray btn-sm" onclick="filterL('hotels',this)">מלוניות</button>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="openFW('lead','lead-fw')">+ ליד חדש</button>
+  </div>
+  <div class="fw-wrap" id="lead-fw"></div>
+  <div class="pipe" id="leads-pipe"></div>
+</div>
+
+<div class="page" id="p-agreements">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="agr-fb">
+      <button class="btn btn-red btn-sm on-btn" onclick="filterA(null,this)">הכל</button>
+      <button class="btn btn-gray btn-sm" onclick="filterA('waiting_signature',this)">ממתין חתימה</button>
+      <button class="btn btn-gray btn-sm" onclick="filterA('signed',this)">חתום</button>
+      <button class="btn btn-gray btn-sm" onclick="filterA('stuck',this)">תקוע</button>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="openFW('agreement','agr-fw')">+ הסכם חדש</button>
+  </div>
+  <div class="fw-wrap" id="agr-fw"></div>
+  <div id="agr-sum" style="font-size:11px;color:#888;margin-bottom:6px"></div>
+  <div id="agr-list"></div>
+</div>
+
+<div class="page" id="p-tasks">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="task-fb">
+      <button class="btn btn-red btn-sm on-btn" onclick="filterT(null,this)">הכל</button>
+      <button class="btn btn-gray btn-sm" onclick="filterT('open',this)">פתוח</button>
+      <button class="btn btn-gray btn-sm" onclick="filterT('in_progress',this)">בביצוע</button>
+      <button class="btn btn-gray btn-sm" onclick="filterT('completed',this)">הושלם</button>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="openFW('task','task-fw')">+ משימה חדשה</button>
+  </div>
+  <div class="fw-wrap" id="task-fw"></div>
+  <div id="tasks-list"></div>
+</div>
+
+<div class="page" id="p-airport">
+  <div class="info info-ap">✈ פגישת שדה תעופה — פעם בשבוע | 3 שעות | מלוניות + דיפו + בנייה</div>
+  <div class="kpi-grid" id="ap-kpis"></div>
+  <div class="fw-wrap" id="ap-fw"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📅 פגישות קבועות
+        <button class="btn btn-blue btn-sm" onclick="openFW('airport','ap-fw')">+ קבע פגישה</button>
+      </div>
+      <div id="ap-list"></div>
+    </div>
+    <div class="card"><div class="card-title">✅ צ'קליסט הכנה</div><div id="ap-chk"></div></div>
+  </div>
+  <div class="card"><div class="card-title">🗓 3 שעות בשדה — לוז</div><div id="ap-agenda"></div></div>
+</div>
+
+<div class="page" id="p-hotels">
+  <div class="info info-blue">מי משלם? התאגיד — לא הקבלן. מתי? פילוט · בין פרויקטים · הגעה לארץ</div>
+  <div style="display:flex;justify-content:flex-end;gap:7px;margin-bottom:10px;flex-wrap:wrap">
+    <button class="btn btn-gray btn-sm" onclick="openFW('hotel-contact','hotel-fw')">+ לקוח מלונית</button>
+    <button class="btn btn-blue" onclick="openFW('hotel-order','hotel-fw')">🏨 הזמן מלונית</button>
+  </div>
+  <div class="kpi-grid" id="hotel-kpis"></div>
+  <div class="fw-wrap" id="hotel-fw"></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">🏨 לקוחות מלוניות</div><div id="hotel-contacts"></div></div>
+    <div class="card"><div class="card-title">📋 הזמנות אחרונות</div><div id="hotel-orders"></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-depot">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:11px;color:#888">יעד חודשי: <strong id="depot-tgt-lbl">15</strong> לקוחות | humidepot.co.il</div>
+    <button class="btn btn-gold" onclick="openFW('depot-order','depot-fw')">📦 הזמנת ריהוט</button>
+  </div>
+  <div class="info info-amber">מוצר מוביל מאי: מיטת ברזל יחיד 157 יח' | לסגירה: TIM11, חי מגן, סוראל, עובדלי</div>
+  <div class="kpi-grid" id="depot-kpis"></div>
+  <div class="fw-wrap" id="depot-fw"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">💰 מחירון דיפו
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-gray btn-sm" onclick="addPriceCat()">+ קטגוריה</button>
+          <button class="btn btn-gold btn-sm" id="save-pl-btn" onclick="savePL()">💾 שמור</button>
+        </div>
+      </div>
+      <div id="pricelist"></div>
+    </div>
+    <div class="card"><div class="card-title">📦 הזמנות ריהוט</div><div id="depot-orders"></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-activities">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="acts-fb">
+      <button class="btn btn-red btn-sm on-btn" onclick="filterActs(null,this)">הכל</button>
+      <button class="btn btn-gray btn-sm" onclick="filterActs('call',this)">שיחות</button>
+      <button class="btn btn-gray btn-sm" onclick="filterActs('meeting',this)">פגישות</button>
+      <button class="btn btn-gray btn-sm" onclick="filterActs('airport',this)">✈ שדה</button>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="openFW('activity','act-fw')">+ פעילות</button>
+  </div>
+  <div class="fw-wrap" id="act-fw"></div>
+  <div class="card" id="acts-list"></div>
+</div>
+
+<div class="page" id="p-daily">
+  <div style="display:flex;gap:7px;margin-bottom:10px">
+    <button class="btn btn-red btn-sm" id="btn-off" onclick="setDT('office')">📁 משרד</button>
+    <button class="btn btn-gray btn-sm" id="btn-fld" onclick="setDT('field')">🚗 שטח</button>
+  </div>
+  <div id="daily-seg" class="info info-blue"></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">⏰ לוז היום</div><div class="tl" id="daily-tl"></div></div>
+    <div class="card"><div class="card-title">✅ צ'קליסט <span id="chk-cnt" style="font-size:11px;color:#888"></span></div><div id="daily-chk"></div></div>
+  </div>
+</div>
+
+<div class="page" id="p-plan">
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">📊 עדכן ביצוע שבועי</div>
+      <div class="fgrid">
+        <div class="fg"><label>פגישות (יעד <span id="pt-m">5</span>)</label><input type="number" min="0" id="kpi-m" value="0" oninput="updKpi('m',this.value)"></div>
+        <div class="fg"><label>שיחות (יעד <span id="pt-c">20</span>)</label><input type="number" min="0" id="kpi-c" value="0" oninput="updKpi('c',this.value)"></div>
+        <div class="fg"><label>הסכמים (יעד <span id="pt-d">1</span>)</label><input type="number" min="0" id="kpi-d" value="0" oninput="updKpi('d',this.value)"></div>
+        <div class="fg"><label>שדה תעופה (יעד 1)</label><input type="number" min="0" id="kpi-ap" value="0" oninput="updKpi('ap',this.value)"></div>
+      </div>
+      <div id="plan-prog"></div>
+    </div>
+    <div class="card"><div class="card-title">📅 סגמנטים לפי שבוע</div><div id="plan-segs"></div></div>
+  </div>
+  <div class="card"><div class="card-title">🎯 יעדים מינ'/מקס'</div><div id="plan-tbl"></div></div>
+</div>
+
+<div class="page" id="p-settings">
+  <div class="info info-amber">שנה כל פרמטר — יעדים, שמות, לוז. נשמר אוטומטית.</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">🎯 יעדים שבועיים</div>
+      <div class="set-row">
+        <div><div class="set-label">פגישות</div><div class="set-sub">מינ' / מקס'</div></div>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input class="set-inp" type="number" id="s-mm" style="width:55px" oninput="sg('m_min',this.value)">
+          <span style="color:#aaa">/</span>
+          <input class="set-inp" type="number" id="s-mx" style="width:55px" oninput="sg('m_max',this.value)">
+        </div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">שיחות</div><div class="set-sub">מינ' / מקס'</div></div>
+        <div style="display:flex;gap:5px;align-items:center">
+          <input class="set-inp" type="number" id="s-cm" style="width:55px" oninput="sg('c_min',this.value)">
+          <span style="color:#aaa">/</span>
+          <input class="set-inp" type="number" id="s-cx" style="width:55px" oninput="sg('c_max',this.value)">
+        </div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">הסכמים מינ' לשבוע</div></div>
+        <input class="set-inp" type="number" id="s-dm" style="width:60px" oninput="sg('d_min',this.value)">
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">לקוחות דיפו/חודש</div></div>
+        <input class="set-inp" type="number" id="s-dt" style="width:60px" oninput="sg('depot_tgt',this.value);document.getElementById('depot-tgt-lbl').textContent=this.value">
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">תפוסת מלוניות מינ'%</div></div>
+        <input class="set-inp" type="number" id="s-ho" style="width:60px" oninput="sg('hotel_occ',this.value)">
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">מחיר ברירת מחדל/לילה</div></div>
+        <input class="set-inp" type="number" id="s-hp" style="width:70px" oninput="sg('hotel_price',this.value)">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 אנשי צוות</div>
+      <div class="set-row"><div class="set-label">מנהל מלוניות</div><input class="set-inp" id="s-hm" placeholder="רואי" oninput="sg('hotel_mgr',this.value)"></div>
+      <div class="set-row"><div class="set-label">מנהל מחסן דיפו</div><input class="set-inp" id="s-dm2" placeholder="שי" oninput="sg('depot_mgr',this.value)"></div>
+      <div class="set-row"><div class="set-label">רכז מכירות</div><input class="set-inp" id="s-sm" placeholder="רועי" oninput="sg('sales_mgr',this.value)"></div>
+      <div class="set-row"><div class="set-label">עוזרת (פוסטים/הסכמים)</div><input class="set-inp" id="s-as" placeholder="אלי" oninput="sg('assistant',this.value)"></div>
+      <div class="set-row"><div class="set-label">מנכ"ל</div><input class="set-inp" id="s-ceo" oninput="sg('ceo',this.value)"></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📅 לוז שבועי קבוע</div>
+      <div class="set-row">
+        <div><div class="set-label">שדה תעופה</div><div class="set-sub">יום + שעה</div></div>
+        <div style="display:flex;gap:5px">
+          <input class="set-inp" id="s-ad" placeholder="ראשון" style="width:75px" oninput="sg('ap_day',this.value)">
+          <input class="set-inp" id="s-at" type="time" style="width:75px" oninput="sg('ap_time',this.value)">
+        </div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">סיכום שבועי</div><div class="set-sub">יום + שעה</div></div>
+        <div style="display:flex;gap:5px">
+          <input class="set-inp" id="s-sd" placeholder="חמישי" style="width:75px" oninput="sg('sum_day',this.value)">
+          <input class="set-inp" id="s-st" type="time" style="width:75px" oninput="sg('sum_time',this.value)">
+        </div>
+      </div>
+      <div class="set-row">
+        <div><div class="set-label">יציאה מוקדם לילדה</div></div>
+        <input class="set-inp" id="s-ed" placeholder="שישי" style="width:75px" oninput="sg('early_day',this.value)">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📧 מיילים</div>
+      <div class="set-row"><div class="set-label">הנהלת חשבונות</div><input class="set-inp" id="s-ae" placeholder="accounting@..." style="min-width:140px" oninput="sg('acc_email',this.value)"></div>
+      <div class="set-row"><div class="set-label">מחסנאי</div><input class="set-inp" id="s-we" placeholder="warehouse@..." style="min-width:140px" oninput="sg('wh_email',this.value)"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <button class="btn btn-red" onclick="saveSettings()">💾 שמור הגדרות</button>
+    <button class="btn btn-gray" onclick="exportData()">⬇ ייצוא JSON</button>
+    <button class="btn btn-gray" onclick="importData()">⬆ יבוא JSON</button>
+    <button class="btn" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" onclick="resetAll()">🗑 איפוס</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+var PL0 = [
+  {cat:"מוצרי חשמל ומטבח",items:[
+    {n:"כיריים חשמליות",u:"יח'",p:200},{n:'מכונת כביסה 6 ק"ג',u:"יח'",p:750},
+    {n:"מקרר 340 ליטר",u:"יח'",p:1250},{n:"תנור גז",u:"יח'",p:900},
+    {n:'טלוויזיה 50"',u:"יח'",p:1200},{n:"כיריים גז 2 להבות",u:"יח'",p:140},
+    {n:"כיריים גז 4 להבות",u:"יח'",p:290},{n:"תנור בילד-אין 65L",u:"יח'",p:600},
+    {n:"קומקום",u:"יח'",p:40},{n:"מיקרוגל 20L",u:"יח'",p:200},{n:"סיר אורז",u:"יח'",p:110}
+  ]},
+  {cat:"ריהוט ומיטות",items:[
+    {n:"בסיס מיטת עץ יחיד",u:"יח'",p:250},{n:"מיטת ברזל יחיד",u:"יח'",p:200},
+    {n:"מיטת קומותיים",u:"יח'",p:550},{n:"ארון פלסטיק 2 דלתות",u:"יח'",p:290},
+    {n:"ארון עץ 2 דלתות",u:"יח'",p:450},{n:"שולחן סלון",u:"יח'",p:420},
+    {n:"כיסא פלסטיק",u:"יח'",p:25},{n:"ספה תלת-מושבית",u:"יח'",p:1400},
+    {n:"שולחן אוכל + 4 כיסאות",u:"סט",p:450},{n:"שולחן פלסטיק מתקפל",u:"יח'",p:100}
+  ]},
+  {cat:"מזרנים",items:[
+    {n:'מזרן כחול 7 ס"מ',u:"יח'",p:95},{n:'מזרן כחול 10 ס"מ',u:"יח'",p:115},
+    {n:"מזרן קפיצים 70cm",u:"יח'",p:240},{n:"מזרן קפיצים 80cm",u:"יח'",p:250}
+  ]},
+  {cat:"ציוד נלווה",items:[
+    {n:"מאוורר עמוד",u:"יח'",p:150},{n:"מזגן נייד 12000BTU",u:"יח'",p:1500},
+    {n:"מפזר חום",u:"יח'",p:80},{n:"טיימר 120 דקות",u:"יח'",p:35},
+    {n:"ביד/שטיפה",u:"יח'",p:70},{n:"שלט מזגן אוניברסלי",u:"יח'",p:100},
+    {n:"כבל מאריך",u:"יח'",p:18},{n:"מטף כיבוי אש",u:"יח'",p:200},
+    {n:"מפצל שקעים",u:"יח'",p:12},{n:"מתלה כביסה",u:"יח'",p:55}
+  ]},
+  {cat:"סטים מוכנים",items:[
+    {n:"חבילת כניסה לבית",u:"סט",p:1000},{n:"סט מצעים",u:"סט",p:130},
+    {n:"סט ציוד אישי לעובד",u:"סט",p:180},{n:'סט כלי מטבח ל-8 עובדים',u:"סט",p:2000},
+    {n:"סט ניקיון מלא",u:"סט",p:450}
+  ]},
+  {cat:"שירותים",items:[
+    {n:"הובלה והרכבה",u:"שירות",p:0},{n:"הקמת קיר גבס",u:"שירות",p:0},
+    {n:"נפאל (הרמה לקומות)",u:"שירות",p:0}
+  ]}
+];
+
+var DEFS = {
+  contacts:[],activities:[],agreements:[],tasks:[],orders:[],airportMeetings:[],
+  kpis:{m:0,c:0,d:0,ap:0},checks:{},dayType:"office",
+  pricelist:null,
+  settings:{
+    m_min:5,m_max:10,c_min:20,c_max:40,d_min:1,
+    depot_tgt:15,hotel_occ:70,hotel_price:200,
+    hotel_mgr:"רואי",depot_mgr:"שי",sales_mgr:"רועי",assistant:"אלי",ceo:"",
+    ap_day:"ראשון",ap_time:"10:00",sum_day:"חמישי",sum_time:"17:00",early_day:"שישי",
+    acc_email:"",wh_email:""
+  }
+};
+
+var D = DEFS;
+try {
+  var raw = localStorage.getItem("humi_crm_v6");
+  if (raw) {
+    D = JSON.parse(raw);
+    if (!D.settings) D.settings = DEFS.settings;
+    if (!D.pricelist || !D.pricelist.length) D.pricelist = JSON.parse(JSON.stringify(PL0));
+  } else {
+    D.pricelist = JSON.parse(JSON.stringify(PL0));
+  }
+} catch(e) {
+  D = DEFS;
+  D.pricelist = JSON.parse(JSON.stringify(PL0));
+}
+
+function sv() { try { localStorage.setItem("humi_crm_v6", JSON.stringify(D)); } catch(e) {} }
+function uid() { return Date.now() + "_" + Math.random().toString(36).slice(2,6); }
+function sg(k,v) { var n = parseFloat(v); D.settings[k] = isNaN(n) ? v : n; sv(); }
+function G(k,fb) { var v = D.settings[k]; return (v !== undefined && v !== "") ? v : fb; }
+
+var today = new Date();
+var todayStr = today.toISOString().split("T")[0];
+
+var SL = {new_lead:"ליד חדש",in_progress:"בטיפול",proposal:"הצעת מחיר",waiting:"ממתין",closed:"נסגר",not_relevant:"לא רלוונטי"};
+var SB = {new_lead:"b-new",in_progress:"b-prog",proposal:"b-prop",waiting:"b-wait",closed:"b-done",not_relevant:"b-lost"};
+var AGL = {draft:"טיוטה",sent:"נשלח",review:"בבדיקה",waiting_signature:"ממתין לחתימה",signed:"חתום",stuck:"תקוע"};
+var AGB = {draft:"b-draft",sent:"b-sent",review:"b-rev",waiting_signature:"b-wsig",signed:"b-signed",stuck:"b-stuck"};
+var SEGL = {build:"בנייה",service:"שירותי קרקע",depot:"דיפו",hotels:"מלוניות",other:"אחר",general:"כללי"};
+var SEGB = {build:"b-build",service:"b-service",depot:"b-depot",hotels:"b-hotel",other:"b-other",general:"b-other"};
+var AI = {call:"📞",meeting:"🤝",email:"📧",task:"✅",follow_up:"🔄",airport:"✈"};
+var AL = {call:"שיחה",meeting:"פגישה",email:"מייל",task:"משימה",follow_up:"פולואפ",airport:"שדה תעופה"};
+var WS = [
+  ["בנייה","A-Z · חוזה · ריהוט · מלונית","#eff6ff","#1e40af"],
+  ["שירותי קרקע + דיפו + מלוניות","ניהול · ריהוט · מחסן · חוזים","#f0fdf4","#166534"],
+  ["בנייה — follow-up","סגירות + follow-up הצעות","#fffbeb","#92400e"],
+  ["סגירות חודשיות","הכנת חודש הבא","#f0f9ff","#0369a1"]
+];
+var AP_CHK = ["הכנת תיק לקוחות","מחירון דיפו מעודכן","רשימת מלוניות פנויות","מוצרי דיפו להצגה","כרטיסי ביקור","הצעות מחיר פתוחות","לידים חמים מהשטח"];
+var AP_AGE = [
+  {h:"שעה 1 — מלוניות",i:["לקוחות פעילים + חדשים","פניות לשהיה זמנית","תפוסה ומחירים"]},
+  {h:"שעה 2 — דיפו + ריהוט",i:["הצגת מוצרים","הצעות מחיר","סגירת עסקאות"]},
+  {h:"שעה 3 — בנייה + שירותי קרקע",i:["לידים חדשים","פגישות A-Z","סיכום + משימות שבוע הבא"]}
+];
+var OTASKS = [
+  {t:"09:00",l:"פתיחת יום",s:"פוסטים בוקר + 13:00 ✓ | לסמן לעמי | סריקת לידים",c:"#2563eb"},
+  {t:"09:30",l:"שיחות + בייס",s:"5+ שיחות לפי סגמנט | עדכון בייס | הצעות לפגישות אתמול | לקוח חדש → קבוצה + דיוור",c:"#2563eb"},
+  {t:"12:00",l:"הפסקה",s:"ללא פגישות עסקיות",c:"#94a3b8"},
+  {t:"13:00",l:"משרד — פיתוח",s:"פרויקטים | משימות | קביעת פגישות",c:"#8b5cf6"},
+  {t:"15:00",l:"נוהל סוף יום",s:"הסכמים עם אבי | רואי מלוניות | מחסן | חשבוניות | פוסטים למחר",c:"#16a34a"}
+];
+var FTASKS = [
+  {t:"09:00",l:"פתיחה מרחוק",s:"פוסטים ✓ | אלי שלחה הסכמים? | בייס ריהוט עודכן?",c:"#2563eb"},
+  {t:"10:00",l:"פגישות שטח",s:"3–5 פגישות | מסלול מתוכנן | רישום נקודות מפתח",c:"#d97706"},
+  {t:"16:00",l:"סיכומי פגישות",s:"סיכום לכל לקוח | שליחה לאלי | הצעות עד מחר 12:00",c:"#16a34a"}
+];
+var OCHK = ["לוודא פוסטים בוקר","לסמן לעמי ✓","5+ שיחות לפי סגמנט","עדכון בייס לכל רכישה","הצעת מחיר לכל פגישה אתמול","לקוחות חדשים → קבוצה + דיוור","הסכמים עם אבי","עדכון רואי — מלונית","מחסן מסודר למחר","חשבוניות דיפו","2 פוסטים למחר"];
+var FCHK = ["פוסטים עלו?","אלי שלחה הסכמים?","בייס ריהוט עודכן?","סיכום כתוב לכל לקוח","שליחה לאלי","הצעות עד מחר 12:00"];
+
+var hotelRC = 0, depotRC = 0;
+var leadF = null, agrF = null, taskF = null, actF = null;
+
+// ===== NAV =====
+function sw(id, btn) {
+  document.querySelectorAll(".page").forEach(function(p) { p.classList.remove("on"); });
+  document.querySelectorAll(".tab").forEach(function(b) { b.classList.remove("on"); });
+  document.getElementById("p-" + id).classList.add("on");
+  if (btn) btn.classList.add("on");
+  var renders = {
+    dash: renderDash, leads: renderLeads, agreements: renderAgreements,
+    tasks: renderTasks, airport: renderAirport, hotels: renderHotels,
+    depot: renderDepot, activities: renderActivities, daily: renderDaily,
+    plan: renderPlan, settings: renderSettings
+  };
+  if (renders[id]) renders[id]();
+}
+
+// ===== HELPERS =====
+function updTB() {
+  document.getElementById("tb-m").textContent = D.kpis.m;
+  document.getElementById("tb-c").textContent = D.kpis.c;
+  document.getElementById("tb-d").textContent = D.kpis.d;
+  document.getElementById("tb-t").textContent = D.tasks.filter(function(t) { return t.status !== "completed"; }).length;
+}
+function qAdd(k) { D.kpis[k] = (D.kpis[k] || 0) + 1; sv(); updTB(); renderDash(); }
+function fmt(d) { if (!d) return "—"; return (d + "").split("T")[0]; }
+function segBadge(s) { return '<span class="badge ' + (SEGB[s] || "b-other") + '">' + (SEGL[s] || s) + '</span>'; }
+function pb(v, max, c) {
+  var p = Math.round(Math.min(100, (v || 0) / (max || 1) * 100));
+  return '<div class="prog-track"><div class="prog-fill" style="background:' + c + ';width:' + p + '%"></div></div>';
+}
+function getNextAP() {
+  return D.airportMeetings.filter(function(m) { return m.date >= todayStr; })
+    .sort(function(a, b) { return a.date.localeCompare(b.date); })[0];
+}
+function updKpi(k, v) { v = parseInt(v) || 0; D.kpis[k] = v; sv(); updTB(); renderPlanProg(); }
+
+// ===== DASHBOARD =====
+function renderDash() {
+  var wn = Math.min(Math.floor((today.getDate() - 1) / 7), 3), ws = WS[wn];
+  var hO = D.orders.filter(function(o) { return o.segment === "hotels"; });
+  var dO = D.orders.filter(function(o) { return o.segment === "depot"; });
+  var tRev = D.orders.reduce(function(s, o) { return s + (o.total || 0); }, 0);
+  var mc = new Set(dO.filter(function(o) {
+    var d = new Date(o.created);
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  }).map(function(o) { return o.contact_name; })).size;
+  var tgt = G("depot_tgt", 15);
+  document.getElementById("d-kpis").innerHTML = [
+    {l:"לידים חדשים",v:D.contacts.filter(function(c){return c.stage==="new_lead";}).length,c:"#2563eb"},
+    {l:"הזמנות מלוניות",v:hO.length,c:"#0284c7"},
+    {l:"הזמנות דיפו",v:dO.length,c:"#d97706"},
+    {l:"הכנסות",v:"₪"+Math.round(tRev).toLocaleString(),c:"#16a34a"},
+    {l:"לקוחות דיפו/חודש",v:mc+"/"+tgt,c:mc>=tgt?"#16a34a":"#CC0000"},
+    {l:"משימות פתוחות",v:D.tasks.filter(function(t){return t.status!=="completed";}).length,c:"#CC0000"}
+  ].map(function(k) {
+    return '<div class="kpi"><div class="kpi-v" style="color:' + k.c + ';font-size:' + (typeof k.v === "string" && k.v.length > 5 ? "16px" : "22px") + '">' + k.v + '</div><div class="kpi-l">' + k.l + '</div></div>';
+  }).join("");
+  var nxt = getNextAP();
+  var apb = document.getElementById("d-ap-banner");
+  apb.textContent = nxt ? "✈ פגישת שדה תעופה — " + nxt.date + (nxt.agent ? " | " + nxt.agent : "") + " | 3 שעות | לחץ לפרטים" : "✈ לא קבועה פגישת שדה תעופה לשבוע הבא! לחץ לקביעה";
+  apb.className = "info " + (nxt ? "info-ap" : "info-red");
+  document.getElementById("d-prog").innerHTML = '<div style="font-size:10px;color:#888;margin-bottom:6px;font-weight:bold">יעדים שבועיים — ' + ws[0] + '</div>' +
+    [["m","פגישות",G("m_min",5),"#2563eb"],["c","שיחות",G("c_min",20),"#16a34a"],["d","הסכמים",G("d_min",1),"#d97706"]].map(function(r) {
+      var v = D.kpis[r[0]] || 0;
+      return '<div class="prog-row"><span style="font-size:11px;width:55px;flex-shrink:0">' + r[1] + '</span>' + pb(v, r[2], r[3]) + '<span style="font-size:11px;color:#888;min-width:28px">' + v + '/' + r[2] + '</span></div>';
+    }).join("");
+  var urg = D.tasks.filter(function(t) { return t.status !== "completed" && t.due_date && t.due_date < todayStr; }).slice(0, 4);
+  document.getElementById("d-urgent").innerHTML = urg.length ? urg.map(function(t) {
+    return '<div class="chk-row"><div class="cb ' + (t.status === "completed" ? "done" : "") + '" onclick="doneTask(\'' + t.id + '\',this)">' + (t.status === "completed" ? "✓" : "") + '</div><div style="flex:1"><div style="font-size:12px;font-weight:bold">' + t.title + '</div><div style="font-size:10px;color:#CC0000">יעד: ' + fmt(t.due_date) + '</div></div></div>';
+  }).join("") : '<div class="empty">אין משימות באיחור ✓</div>';
+  document.getElementById("d-pipe").innerHTML = ["new_lead","in_progress","proposal","waiting","closed"].map(function(st) {
+    var items = D.contacts.filter(function(c) { return c.stage === st; }).slice(0, 4);
+    return '<div class="pcol"><div class="pcol-h"><span>' + SL[st] + '</span><span>' + items.length + '</span></div>' +
+      items.map(function(c) {
+        return '<div class="pcard"><div class="pcard-name">' + c.name + '</div><div class="pcard-meta">' + (c.company || "") + (c.value ? " · ₪" + Number(c.value).toLocaleString() : "") + '</div></div>';
+      }).join("") + '</div>';
+  }).join("");
+  var recent = D.activities.slice(-5).reverse();
+  document.getElementById("d-acts").innerHTML = recent.length ? recent.map(function(a) {
+    return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0"><div style="width:24px;height:24px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">' + (AI[a.type] || "📋") + '</div><div style="flex:1"><div style="font-size:12px;font-weight:bold">' + a.subject + '</div><div style="font-size:10px;color:#888">' + (AL[a.type] || a.type) + " · " + (a.contact || "—") + " · " + fmt(a.date) + '</div></div></div>';
+  }).join("") : '<div class="empty">אין פעילויות עדיין</div>';
+  updTB();
+}
+function doneTask(id, el) {
+  D.tasks.forEach(function(t) { if (t.id === id) t.status = "completed"; });
+  el.classList.add("done"); el.textContent = "✓"; sv(); updTB();
+}
+
+// ===== LEADS =====
+function filterL(f, btn) {
+  leadF = f;
+  document.querySelectorAll("#leads-fb button").forEach(function(b) { b.className = "btn btn-gray btn-sm"; });
+  if (btn) btn.className = "btn btn-red btn-sm";
+  renderLeads();
+}
+function renderLeads() {
+  var list = leadF ? D.contacts.filter(function(c) { return c.segment === leadF; }) : D.contacts;
+  document.getElementById("leads-pipe").innerHTML = ["new_lead","in_progress","proposal","waiting","closed","not_relevant"].map(function(st) {
+    var items = list.filter(function(c) { return c.stage === st; });
+    return '<div class="pcol"><div class="pcol-h"><span>' + SL[st] + '</span><span>' + items.length + '</span></div>' +
+      items.map(function(c) {
+        return '<div class="pcard" onclick="editLead(\'' + c.id + '\')"><div class="pcard-name">' + c.name + '</div><div class="pcard-meta">' + (c.company || "") + '<br>' + segBadge(c.segment || "other") + (c.value ? " ₪" + Number(c.value).toLocaleString() : "") + '</div></div>';
+      }).join("") +
+      '<div onclick="openFW(\'lead\',\'lead-fw\')" style="border:1px dashed #ddd;border-radius:6px;padding:5px;text-align:center;cursor:pointer;color:#aaa;font-size:11px;margin-top:4px">+ הוסף</div></div>';
+  }).join("");
+}
+function editLead(id) {
+  var c = D.contacts.find(function(x) { return x.id === id; });
+  if (!c) return;
+  document.getElementById("lead-fw").innerHTML = buildLeadForm(c, id);
+  document.getElementById("lead-fw").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function buildLeadForm(c, id) {
+  c = c || {};
+  return '<div class="card"><div class="card-title">' + (id ? "ערוך לקוח" : "ליד חדש") +
+    ' <button onclick="document.getElementById(\'lead-fw\').innerHTML=\'\'" style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa">×</button></div>' +
+    '<div class="fgrid"><div class="fg"><label>שם *</label><input id="cf-n" value="' + (c.name || "") + '"></div>' +
+    '<div class="fg"><label>חברה</label><input id="cf-co" value="' + (c.company || "") + '"></div>' +
+    '<div class="fg"><label>טלפון</label><input id="cf-ph" value="' + (c.phone || "") + '"></div>' +
+    '<div class="fg"><label>מייל</label><input id="cf-em" value="' + (c.email || "") + '"></div></div>' +
+    '<div class="fgrid"><div class="fg"><label>סגמנט</label><select id="cf-sg">' +
+    ['build','service','depot','hotels','other'].map(function(s) {
+      return '<option value="' + s + '"' + (c.segment === s ? ' selected' : '') + '>' + (SEGL[s] || s) + '</option>';
+    }).join("") + '</select></div>' +
+    '<div class="fg"><label>שלב</label><select id="cf-st">' +
+    Object.keys(SL).map(function(s) {
+      return '<option value="' + s + '"' + (c.stage === s ? ' selected' : '') + '>' + SL[s] + '</option>';
+    }).join("") + '</select></div>' +
+    '<div class="fg"><label>שווי (₪)</label><input id="cf-v" type="number" value="' + (c.value || "") + '"></div>' +
+    '<div class="fg"><label>פעולה הבאה</label><input id="cf-nx" value="' + (c.next || "") + '"></div></div>' +
+    '<div class="fg"><label>הערות</label><textarea id="cf-no">' + (c.notes || "") + '</textarea></div>' +
+    '<div style="display:flex;justify-content:flex-end;gap:7px;margin-top:6px">' +
+    (id ? '<button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" onclick="delLead(\'' + id + '\')">מחק</button>' : "") +
+    ' <button class="btn btn-red btn-sm" onclick="saveContact(' + (id ? '\'' + id + '\'' : 'null') + ')">שמור</button></div></div>';
+}
+function saveContact(id) {
+  var n = document.getElementById("cf-n").value.trim();
+  if (!n) { alert("שם חובה"); return; }
+  var obj = {
+    id: id || uid(), name: n,
+    company: document.getElementById("cf-co").value,
+    phone: document.getElementById("cf-ph").value,
+    email: document.getElementById("cf-em").value,
+    segment: document.getElementById("cf-sg").value,
+    stage: document.getElementById("cf-st").value,
+    value: parseFloat(document.getElementById("cf-v").value) || 0,
+    next: document.getElementById("cf-nx").value,
+    notes: document.getElementById("cf-no").value,
+    created: todayStr
+  };
+  if (id) {
+    var i = D.contacts.findIndex(function(x) { return x.id === id; });
+    if (i >= 0) D.contacts[i] = obj;
+  } else { D.contacts.push(obj); }
+  sv();
+  document.getElementById("lead-fw").innerHTML = "";
+  renderLeads(); renderDash();
+}
+function delLead(id) {
+  if (!confirm("למחוק?")) return;
+  D.contacts = D.contacts.filter(function(c) { return c.id !== id; });
+  sv();
+  document.getElementById("lead-fw").innerHTML = "";
+  renderLeads();
+}
+
+// ===== AGREEMENTS =====
+function filterA(f, btn) {
+  agrF = f;
+  document.querySelectorAll("#agr-fb button").forEach(function(b) { b.className = "btn btn-gray btn-sm"; });
+  if (btn) btn.className = "btn btn-red btn-sm";
+  renderAgreements();
+}
+function renderAgreements() {
+  var list = agrF ? D.agreements.filter(function(a) { return a.stage === agrF; }) : D.agreements.slice().reverse();
+  var ts = D.agreements.filter(function(a) { return a.stage === "signed"; }).reduce(function(s, a) { return s + (a.amount || 0); }, 0);
+  document.getElementById("agr-sum").textContent = 'סה"כ חתומים: ₪' + ts.toLocaleString() + ' | ' + D.agreements.length + ' הסכמים';
+  var ml = { yes: '<span class="badge b-done">כן</span>', no: '<span class="badge b-other">לא</span>', pending: '<span class="badge b-wait">בתיאום</span>' };
+  document.getElementById("agr-list").innerHTML = list.length ? list.map(function(a) {
+    return '<div class="card" style="margin-bottom:6px;padding:10px 12px"><div style="display:flex;align-items:flex-start;gap:8px">' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:bold">' + a.title + '</div>' +
+      '<div style="font-size:11px;color:#888;margin-top:3px">' + (a.client || "—") + (a.phone ? " · " + a.phone : "") + (a.amount ? ' · <span style="color:#d97706;font-weight:bold">₪' + Number(a.amount).toLocaleString() + '</span>' : '') + '</div>' +
+      '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap"><span class="badge ' + (AGB[a.stage] || "b-other") + '">' + (AGL[a.stage] || a.stage) + '</span>' + (ml[a.meet_scheduled || "no"]) + (a.due_date ? '<span class="badge b-other">יעד: ' + fmt(a.due_date) + '</span>' : '') + '</div></div>' +
+      '<div style="display:flex;gap:5px;flex-shrink:0"><button class="btn btn-gray btn-sm" onclick="advAgr(\'' + a.id + '\')">קדם ▶</button>' +
+      '<button onclick="delAgr(\'' + a.id + '\')" style="background:none;border:none;cursor:pointer;font-size:15px;color:#aaa">×</button></div></div></div>';
+  }).join("") : '<div class="empty">אין הסכמים עדיין</div>';
+}
+var AGR_O = ["draft","sent","review","waiting_signature","signed"];
+function advAgr(id) {
+  var a = D.agreements.find(function(x) { return x.id === id; });
+  if (!a) return;
+  var i = AGR_O.indexOf(a.stage);
+  if (i < AGR_O.length - 1) a.stage = AGR_O[i + 1];
+  sv(); renderAgreements();
+}
+function delAgr(id) {
+  if (!confirm("למחוק?")) return;
+  D.agreements = D.agreements.filter(function(a) { return a.id !== id; });
+  sv(); renderAgreements();
+}
+
+// ===== TASKS =====
+function filterT(f, btn) {
+  taskF = f;
+  document.querySelectorAll("#task-fb button").forEach(function(b) { b.className = "btn btn-gray btn-sm"; });
+  if (btn) btn.className = "btn btn-red btn-sm";
+  renderTasks();
+}
+function renderTasks() {
+  var list = D.tasks.slice().sort(function(a, b) { return (a.due_date || "9").localeCompare(b.due_date || "9"); });
+  if (taskF && ["open","in_progress","completed"].indexOf(taskF) >= 0) list = list.filter(function(t) { return t.status === taskF; });
+  else if (taskF) list = list.filter(function(t) { return t.segment === taskF; });
+  var sB = { open: "b-open פתוח", in_progress: "b-inprog בביצוע", completed: "b-comp הושלם" };
+  document.getElementById("tasks-list").innerHTML = list.length ? list.map(function(t) {
+    var ov = t.due_date && t.due_date < todayStr && t.status !== "completed";
+    var sb = (sB[t.status] || "b-open פתוח").split(" ");
+    return '<div style="background:#fff;border:1px solid ' + (ov ? "#f43f5e" : "#ddd") + ';border-radius:6px;padding:9px 11px;margin-bottom:5px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+      '<div class="cb ' + (t.status === "completed" ? "done" : "") + '" onclick="toggleTask(\'' + t.id + '\',this)">' + (t.status === "completed" ? "✓" : "") + '</div>' +
+      '<div style="flex:1"><div style="font-size:12px;font-weight:bold">' + t.title + (ov ? ' <span style="color:#CC0000;font-size:10px">⚠ באיחור</span>' : "") + '</div>' +
+      '<div style="font-size:10px;color:#888;margin-top:2px">' + segBadge(t.segment || "general") + ' <span class="badge ' + sb[0] + '">' + sb.slice(1).join(" ") + '</span>' + (t.due_date ? " יעד: " + fmt(t.due_date) : "") + (t.assigned ? " · " + t.assigned : "") + '</div></div>' +
+      '<button onclick="delTask(\'' + t.id + '\')" style="background:none;border:none;cursor:pointer;font-size:15px;color:#aaa;padding:2px 4px">×</button></div></div>';
+  }).join("") : '<div class="empty">אין משימות</div>';
+  updTB();
+}
+function toggleTask(id, el) {
+  D.tasks.forEach(function(t) { if (t.id === id) t.status = t.status === "completed" ? "open" : "completed"; });
+  sv(); renderTasks(); updTB();
+}
+function delTask(id) { D.tasks = D.tasks.filter(function(t) { return t.id !== id; }); sv(); renderTasks(); updTB(); }
+
+// ===== AIRPORT =====
+function renderAirport() {
+  var nxt = getNextAP();
+  var hist = D.airportMeetings.filter(function(m) { return m.date < todayStr; }).length;
+  var tRev = D.airportMeetings.reduce(function(s, m) { return s + (m.revenue || 0); }, 0);
+  document.getElementById("ap-kpis").innerHTML = [
+    {l:"פגישות שהיו",v:hist,c:"#0284c7"},
+    {l:"פגישה הבאה",v:nxt?nxt.date:"לא נקבע",c:nxt?"#16a34a":"#CC0000",sm:true},
+    {l:"הכנסות",v:"₪"+tRev.toLocaleString(),c:"#d97706"}
+  ].map(function(k) {
+    return '<div class="kpi"><div class="kpi-v" style="color:' + k.c + ';font-size:' + (k.sm ? "15px" : "22px") + '">' + (typeof k.v === "number" ? k.v.toLocaleString() : k.v) + '</div><div class="kpi-l">' + k.l + '</div></div>';
+  }).join("");
+  var upcoming = D.airportMeetings.filter(function(m) { return m.date >= todayStr; }).sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 4);
+  document.getElementById("ap-list").innerHTML = upcoming.length ? upcoming.map(function(m, i) {
+    return '<div class="ap-card' + (i === 0 ? " next" : "") + '">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:bold;color:#0284c7">✈ ' + m.date + '</div><span class="badge b-ap">3 שעות</span></div>' +
+      '<div style="font-size:11px;color:#555;margin-top:3px">' + (m.agent ? "איש שטח: " + m.agent : "") + (m.location ? " · " + m.location : "") + '</div>' +
+      (m.notes ? '<div style="font-size:11px;color:#888;margin-top:2px">' + m.notes + '</div>' : "") +
+      '<button onclick="delAP(\'' + m.id + '\')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa;margin-top:4px">מחק</button></div>';
+  }).join("") : '<div class="empty">לא קבועה פגישה עדיין</div>';
+  var apChk = D.checks["ap_" + todayStr] || {};
+  document.getElementById("ap-chk").innerHTML = AP_CHK.map(function(c, i) {
+    var done = apChk["a" + i] || false;
+    return '<div class="chk-row"><div class="cb ' + (done ? "done" : "") + '" onclick="togAPChk(' + i + ',this)">' + (done ? "✓" : "") + '</div><div class="' + (done ? "done-text" : "") + '">' + c + '</div></div>';
+  }).join("");
+  document.getElementById("ap-agenda").innerHTML = AP_AGE.map(function(h) {
+    return '<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:bold;color:#0284c7;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #ddd">' + h.h + '</div>' +
+      h.i.map(function(it) { return '<div style="font-size:12px;padding:2px 0;color:#888">· ' + it + '</div>'; }).join("") + '</div>';
+  }).join("");
+}
+function togAPChk(i, el) {
+  var k = "ap_" + todayStr;
+  if (!D.checks[k]) D.checks[k] = {};
+  D.checks[k]["a" + i] = !D.checks[k]["a" + i];
+  el.classList.toggle("done", D.checks[k]["a" + i]);
+  el.textContent = D.checks[k]["a" + i] ? "✓" : "";
+  el.nextElementSibling.className = D.checks[k]["a" + i] ? "done-text" : "";
+  sv();
+}
+function delAP(id) { D.airportMeetings = D.airportMeetings.filter(function(m) { return m.id !== id; }); sv(); renderAirport(); renderDash(); }
+
+// ===== HOTELS =====
+function renderHotels() {
+  var hC = D.contacts.filter(function(c) { return c.segment === "hotels"; });
+  var hO = D.orders.filter(function(o) { return o.segment === "hotels"; });
+  var nights = hO.reduce(function(s, o) { return s + ((o.items || []).reduce(function(ss, it) { return ss + (it.qty || 0); }, 0)); }, 0);
+  var rev = hO.reduce(function(s, o) { return s + (o.total || 0); }, 0);
+  document.getElementById("hotel-kpis").innerHTML = [
+    {l:"לקוחות מלוניות",v:hC.length,c:"#2563eb"},
+    {l:"הזמנות",v:hO.length,c:"#d97706"},
+    {l:"לילות",v:nights,c:"#8b5cf6"},
+    {l:"הכנסות",v:"₪"+Math.round(rev).toLocaleString(),c:"#16a34a"}
+  ].map(function(k) {
+    return '<div class="kpi"><div class="kpi-v" style="color:' + k.c + '">' + k.v + '</div><div class="kpi-l">' + k.l + '</div></div>';
+  }).join("");
+  document.getElementById("hotel-contacts").innerHTML = hC.length ? hC.map(function(c) {
+    return '<div class="pcard" onclick="editLead(\'' + c.id + '\')"><div class="pcard-name">' + c.name + (c.company ? " — " + c.company : "") + '</div><div class="pcard-meta">' + (c.hotel_address || "ללא כתובת") + (c.hotel_price_per_day ? " · ₪" + c.hotel_price_per_day + "/לילה" : "") + '<br><span class="badge ' + (SB[c.stage || "new_lead"] || "b-new") + '">' + (SL[c.stage || "new_lead"]) + '</span></div></div>';
+  }).join("") : '<div class="empty">אין לקוחות מלוניות</div>';
+  document.getElementById("hotel-orders").innerHTML = hO.slice().reverse().slice(0, 6).map(function(o) {
+    var n = (o.items || []).reduce(function(s, it) { return s + (it.qty || 0); }, 0);
+    return '<div style="padding:7px 0;border-bottom:1px solid #f0f0f0"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:12px;font-weight:bold">' + o.contact_name + '</div><div style="font-size:10px;color:#888">' + n + ' לילות · ' + fmt(o.created) + '</div></div><div style="font-size:13px;font-weight:bold;color:#d97706">₪' + (o.total || 0).toLocaleString() + '</div></div></div>';
+  }).join("") || '<div class="empty">אין הזמנות</div>';
+}
+
+// ===== DEPOT =====
+function renderDepot() {
+  var dO = D.orders.filter(function(o) { return o.segment === "depot"; });
+  var rev = dO.reduce(function(s, o) { return s + (o.total || 0); }, 0);
+  var items = dO.reduce(function(s, o) { return s + (o.items || []).reduce(function(ss, it) { return ss + (it.qty || 0); }, 0); }, 0);
+  var mc = new Set(dO.filter(function(o) {
+    var d = new Date(o.created);
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  }).map(function(o) { return o.contact_name; })).size;
+  var tgt = G("depot_tgt", 15);
+  document.getElementById("depot-kpis").innerHTML = [
+    {l:"הזמנות",v:dO.length,c:"#d97706"},
+    {l:"פריטים",v:items,c:"#2563eb"},
+    {l:"הכנסות",v:"₪"+Math.round(rev).toLocaleString(),c:"#16a34a"},
+    {l:"לקוחות חודשי",v:mc+"/"+tgt,c:mc>=tgt?"#16a34a":"#CC0000"}
+  ].map(function(k) {
+    return '<div class="kpi"><div class="kpi-v" style="color:' + k.c + ';font-size:18px">' + k.v + '</div><div class="kpi-l">' + k.l + '</div></div>';
+  }).join("");
+  renderPricelist();
+  document.getElementById("depot-orders").innerHTML = dO.slice().reverse().slice(0, 6).map(function(o) {
+    return '<div style="padding:7px 0;border-bottom:1px solid #f0f0f0"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:12px;font-weight:bold">' + o.contact_name + '</div><div style="font-size:10px;color:#888">' + fmt(o.created) + '</div></div><div style="font-size:13px;font-weight:bold;color:#d97706">₪' + (o.total || 0).toLocaleString() + '</div></div>' +
+      (o.items || []).slice(0, 2).map(function(it) { return '<div style="font-size:10px;color:#888">· ' + it.name + ' ×' + it.qty + '</div>'; }).join("") + '</div>';
+  }).join("") || '<div class="empty">אין הזמנות</div>';
+}
+function renderPricelist() {
+  document.getElementById("pricelist").innerHTML = D.pricelist.map(function(cat, ci) {
+    return '<div class="price-cat"><div class="price-cat-h"><span>' + cat.cat + '</span><button onclick="delPriceCat(' + ci + ')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa">✕</button></div>' +
+      cat.items.map(function(item, ii) {
+        return '<div class="price-row"><span style="flex:1;font-size:12px">' + item.n + '</span><span style="font-size:10px;color:#888;width:38px;text-align:center">' + item.u + '</span><span style="font-size:12px;font-weight:bold;color:#d97706;width:60px;text-align:left">' + (item.p ? "₪" + item.p.toLocaleString() : "לפי שירות") + '</span><input class="price-inp" type="number" value="' + item.p + '" onchange="D.pricelist[' + ci + '].items[' + ii + '].p=parseFloat(this.value)||0" aria-label="מחיר"><button onclick="delPriceItem(' + ci + ',' + ii + ')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#aaa">×</button></div>';
+      }).join("") +
+      '<button onclick="addPriceItem(' + ci + ')" style="width:100%;margin-top:3px;padding:4px;background:none;border:1px dashed #ddd;border-radius:6px;font-size:11px;color:#aaa;cursor:pointer">+ הוסף מוצר</button></div>';
+  }).join("");
+}
+function delPriceCat(ci) { if (confirm("למחוק?")) { D.pricelist.splice(ci, 1); renderPricelist(); } }
+function delPriceItem(ci, ii) { D.pricelist[ci].items.splice(ii, 1); renderPricelist(); }
+function savePL() { sv(); var b = document.getElementById("save-pl-btn"); b.textContent = "✓ נשמר!"; setTimeout(function() { b.textContent = "💾 שמור"; }, 1500); }
+function addPriceCat() { var n = prompt("שם קטגוריה:"); if (!n) return; D.pricelist.push({ cat: n, items: [] }); renderPricelist(); }
+function addPriceItem(ci) {
+  var n = prompt("שם מוצר:"); if (!n) return;
+  var u = prompt("יחידה (יח', מ\"ר, שירות):") || "יח'";
+  var p = parseFloat(prompt("מחיר (0 = לפי שירות):") || "0");
+  D.pricelist[ci].items.push({ n: n, u: u, p: p }); renderPricelist();
+}
+
+// ===== ACTIVITIES =====
+function filterActs(f, btn) {
+  actF = f;
+  document.querySelectorAll("#acts-fb button").forEach(function(b) { b.className = "btn btn-gray btn-sm"; });
+  if (btn) btn.className = "btn btn-red btn-sm";
+  renderActivities();
+}
+function renderActivities() {
+  var list = actF ? D.activities.filter(function(a) { return a.type === actF; }).slice().reverse() : D.activities.slice().reverse();
+  document.getElementById("acts-list").innerHTML = list.length ? list.map(function(a) {
+    return '<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0"><div style="width:26px;height:26px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">' + (AI[a.type] || "📋") + '</div><div style="flex:1"><div style="font-size:12px;font-weight:bold">' + a.subject + (a.type === "airport" ? ' <span class="badge b-ap">✈ שדה תעופה</span>' : "") + '</div><div style="font-size:10px;color:#888">' + (AL[a.type] || a.type) + " · " + (a.contact || "—") + " · " + fmt(a.date) + '</div>' + (a.outcome ? '<div style="font-size:10px;color:#888;margin-top:1px">סיכום: ' + a.outcome + '</div>' : "") + (a.next ? '<div style="font-size:10px;color:#d97706;margin-top:1px">→ ' + a.next + '</div>' : "") + '</div><button onclick="delAct(\'' + a.id + '\')" style="background:none;border:none;cursor:pointer;font-size:15px;color:#aaa;padding:2px 4px">×</button></div>';
+  }).join("") : '<div class="empty">אין פעילויות</div>';
+}
+function delAct(id) { D.activities = D.activities.filter(function(a) { return a.id !== id; }); sv(); renderActivities(); }
+
+// ===== DAILY =====
+function setDT(t) { D.dayType = t; sv(); renderDaily(); }
+function renderDaily() {
+  var wn = Math.min(Math.floor((today.getDate() - 1) / 7), 3), ws = WS[wn];
+  var seg = document.getElementById("daily-seg");
+  seg.textContent = "סגמנט שבועי: " + ws[0] + " — " + ws[1];
+  seg.style.background = ws[2]; seg.style.color = ws[3]; seg.style.borderColor = ws[3];
+  var tl = D.dayType === "office" ? OTASKS : FTASKS;
+  document.getElementById("daily-tl").innerHTML = tl.map(function(item) {
+    return '<div class="tl-item" style="--dot-color:' + item.c + '"><div class="tl-time">' + item.t + '</div><div class="tl-label">' + item.l + '</div><div class="tl-sub">' + item.s + '</div></div>';
+  }).join("");
+  var checks = D.dayType === "office" ? OCHK : FCHK;
+  var chk = D.checks[todayStr] || {};
+  var done = Object.values(chk).filter(Boolean).length;
+  document.getElementById("chk-cnt").textContent = done + "/" + checks.length;
+  document.getElementById("daily-chk").innerHTML = checks.map(function(c, i) {
+    var d = chk["k" + i] || false;
+    return '<div class="chk-row"><div class="cb ' + (d ? "done" : "") + '" onclick="togChk(' + i + ',this)">' + (d ? "✓" : "") + '</div><div class="' + (d ? "done-text" : "") + '">' + c + '</div></div>';
+  }).join("");
+  document.getElementById("btn-off").className = "btn btn-sm " + (D.dayType === "office" ? "btn-red" : "btn-gray");
+  document.getElementById("btn-fld").className = "btn btn-sm " + (D.dayType === "field" ? "btn-red" : "btn-gray");
+  var nxtAP = getNextAP();
+  if (nxtAP && nxtAP.date === todayStr) {
+    document.getElementById("daily-tl").insertAdjacentHTML("afterbegin", '<div style="background:#f0f9ff;border:2px solid #0284c7;border-radius:6px;padding:9px 12px;margin-bottom:12px"><div style="font-size:13px;font-weight:bold;color:#0284c7">✈ היום יש פגישת שדה תעופה!</div><div style="font-size:11px;color:#0369a1;margin-top:2px">3 שעות' + (nxtAP.agent ? " | " + nxtAP.agent : "") + '</div></div>');
+  }
+}
+function togChk(i, el) {
+  if (!D.checks[todayStr]) D.checks[todayStr] = {};
+  D.checks[todayStr]["k" + i] = !D.checks[todayStr]["k" + i];
+  el.classList.toggle("done", D.checks[todayStr]["k" + i]);
+  el.textContent = D.checks[todayStr]["k" + i] ? "✓" : "";
+  el.nextElementSibling.className = D.checks[todayStr]["k" + i] ? "done-text" : "";
+  var checks = D.dayType === "office" ? OCHK : FCHK;
+  document.getElementById("chk-cnt").textContent = Object.values(D.checks[todayStr]).filter(Boolean).length + "/" + checks.length;
+  sv();
+}
+
+// ===== PLAN =====
+function renderPlanProg() {
+  var el = document.getElementById("plan-prog"); if (!el) return;
+  el.innerHTML = [["m","פגישות",G("m_min",5),"#2563eb"],["c","שיחות",G("c_min",20),"#16a34a"],["d","הסכמים",G("d_min",1),"#d97706"],["ap","שדה תעופה",1,"#0284c7"]].map(function(r) {
+    var v = D.kpis[r[0]] || 0;
+    return '<div class="prog-row"><span style="font-size:11px;width:85px;flex-shrink:0">' + r[1] + '</span>' + pb(v, r[2], r[3]) + '<span style="font-size:11px;color:#888;min-width:30px">' + v + "/" + r[2] + '</span></div>';
+  }).join("");
+}
+function renderPlan() {
+  renderPlanProg();
+  ["m","c","d","ap"].forEach(function(k) { var el = document.getElementById("kpi-" + k); if (el) el.value = D.kpis[k] || 0; });
+  document.getElementById("pt-m").textContent = G("m_min", 5);
+  document.getElementById("pt-c").textContent = G("c_min", 20);
+  document.getElementById("pt-d").textContent = G("d_min", 1);
+  document.getElementById("plan-segs").innerHTML = WS.map(function(ws, i) {
+    return '<div style="background:' + ws[2] + ';border:1px solid ' + ws[3] + '33;border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:10px;font-weight:bold;color:' + ws[3] + ';margin-bottom:1px">שבוע ' + (i + 1) + '</div><div style="font-size:13px;font-weight:bold;color:' + ws[3] + '">' + ws[0] + '</div><div style="font-size:11px;color:' + ws[3] + ';opacity:.7">' + ws[1] + '</div></div>';
+  }).join("");
+  var rows = [
+    ["פגישות לקוחות", G("m_min",5), G("m_max",10)],
+    ["שיחות יוצאות", G("c_min",20), G("c_max",40)],
+    ["הצעות מחיר", 5, 10],
+    ["הסכמים", G("d_min",1), 3],
+    ["מכירות דיפו", 1, 5],
+    ["פגישת שדה תעופה", 1, 1],
+    ["לקוחות דיפו/חודש", G("depot_tgt",15), 30],
+    ["תפוסת מלוניות", G("hotel_occ",70)+"%", "95%"],
+    ["פוסטים", 10, 14]
+  ];
+  document.getElementById("plan-tbl").innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:right;padding:7px 8px;color:#888;border-bottom:2px solid #ddd;font-weight:bold">קטגוריה</th><th style="text-align:center;padding:7px 8px;color:#888;border-bottom:2px solid #ddd;font-weight:bold">מינ\'</th><th style="text-align:center;padding:7px 8px;color:#888;border-bottom:2px solid #ddd;font-weight:bold">מקס\'</th></tr></thead><tbody>' +
+    rows.map(function(r, i) {
+      return '<tr style="background:' + (i % 2 === 0 ? "#fff" : "#f8fafc") + '"><td style="padding:7px 8px">' + r[0] + '</td><td style="padding:7px 8px;text-align:center;color:#888">' + r[1] + '</td><td style="padding:7px 8px;text-align:center;font-weight:bold;color:#16a34a">' + r[2] + '</td></tr>';
+    }).join("") + "</tbody></table>";
+}
+
+// ===== SETTINGS =====
+function renderSettings() {
+  var s = D.settings;
+  var map = [["s-mm","m_min",5],["s-mx","m_max",10],["s-cm","c_min",20],["s-cx","c_max",40],["s-dm","d_min",1],["s-dt","depot_tgt",15],["s-ho","hotel_occ",70],["s-hp","hotel_price",200],["s-hm","hotel_mgr",""],["s-dm2","depot_mgr",""],["s-sm","sales_mgr",""],["s-as","assistant",""],["s-ceo","ceo",""],["s-ad","ap_day","ראשון"],["s-at","ap_time","10:00"],["s-sd","sum_day","חמישי"],["s-st","sum_time","17:00"],["s-ed","early_day","שישי"],["s-ae","acc_email",""],["s-we","wh_email",""]];
+  map.forEach(function(f) { var el = document.getElementById(f[0]); if (el) el.value = s[f[1]] !== undefined ? s[f[1]] : f[2]; });
+}
+function saveSettings() {
+  sv(); alert("ההגדרות נשמרו ✓");
+  renderPlan();
+}
+function exportData() {
+  var blob = new Blob([JSON.stringify(D, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "humi_data_" + todayStr + ".json";
+  a.click();
+}
+function importData() {
+  var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json";
+  inp.onchange = function(e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      try { var d = JSON.parse(ev.target.result); Object.assign(D, d); sv(); location.reload(); }
+      catch(err) { alert("קובץ לא תקין"); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+function resetAll() {
+  if (confirm("לאפס הכל? לא ניתן לשחזר!")) { localStorage.clear(); location.reload(); }
+}
+
+// ===== INLINE FORMS =====
+function openFW(type, wrId) {
+  var w = document.getElementById(wrId); if (!w) return;
+  if (type === "hotel-order") hotelRC = 0;
+  if (type === "depot-order") depotRC = 0;
+  var titles = { lead:"ליד חדש", agreement:"הסכם חדש", task:"משימה חדשה", activity:"פעילות חדשה", airport:"קביעת פגישת שדה תעופה", "hotel-order":"הזמנת מלונית", "hotel-contact":"לקוח מלונית חדש", "depot-order":"הזמנת ריהוט" };
+  if (type === "lead") { w.innerHTML = buildLeadForm(null, null); w.scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+  var body = buildFormBody(type);
+  w.innerHTML = '<div class="card"><div class="card-title">' + (titles[type] || type) +
+    ' <button onclick="document.getElementById(\'' + wrId + '\').innerHTML=\'\'" style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa">×</button></div>' +
+    body +
+    '<div style="display:flex;justify-content:flex-end;gap:7px;margin-top:8px">' +
+    '<button class="btn btn-gray btn-sm" onclick="document.getElementById(\'' + wrId + '\').innerHTML=\'\'">ביטול</button>' +
+    '<button class="btn btn-red btn-sm" onclick="saveForm(\'' + type + '\',\'' + wrId + '\')">שמור</button></div></div>';
+  w.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function buildFormBody(type) {
+  if (type === "agreement") return '<div class="fgrid"><div class="fg"><label>שם הסכם *</label><input id="agf-t"></div><div class="fg"><label>שם לקוח</label><input id="agf-c"></div><div class="fg"><label>טלפון</label><input id="agf-p"></div><div class="fg"><label>סכום (₪)</label><input id="agf-a" type="number"></div></div><div class="fgrid"><div class="fg"><label>שלב</label><select id="agf-s"><option value="draft">טיוטה</option><option value="sent">נשלח</option><option value="review">בבדיקה</option><option value="waiting_signature">ממתין לחתימה</option><option value="signed">חתום</option><option value="stuck">תקוע</option></select></div><div class="fg"><label>פגישה תואמה?</label><select id="agf-m"><option value="no">לא</option><option value="yes">כן</option><option value="pending">בתיאום</option></select></div><div class="fg"><label>תאריך יעד</label><input id="agf-d" type="date"></div></div><div class="fg"><label>הערות</label><textarea id="agf-n"></textarea></div>';
+  if (type === "task") return '<div class="fgrid"><div class="fg"><label>כותרת *</label><input id="tf-t"></div><div class="fg"><label>נציג</label><input id="tf-a" placeholder="שם אחראי"></div></div><div class="fgrid"><div class="fg"><label>סגמנט</label><select id="tf-s"><option value="general">כללי</option><option value="build">בנייה</option><option value="service">שירותי קרקע</option><option value="depot">דיפו</option><option value="hotels">מלוניות</option></select></div><div class="fg"><label>סטטוס</label><select id="tf-st"><option value="open">פתוח</option><option value="in_progress">בביצוע</option></select></div><div class="fg"><label>תאריך יעד</label><input id="tf-due" type="date"></div></div><div class="fg"><label>הערות</label><textarea id="tf-n"></textarea></div>';
+  if (type === "activity") return '<div class="fgrid"><div class="fg"><label>סוג *</label><select id="af-t"><option value="call">שיחה</option><option value="meeting">פגישה</option><option value="email">מייל</option><option value="follow_up">פולואפ</option><option value="airport">✈ שדה תעופה</option></select></div><div class="fg"><label>נושא *</label><input id="af-s"></div><div class="fg"><label>איש קשר</label><input id="af-c"></div><div class="fg"><label>תאריך</label><input id="af-d" type="date" value="' + todayStr + '"></div></div><div class="fgrid"><div class="fg"><label>סגמנט</label><select id="af-sg"><option value="general">כללי</option><option value="build">בנייה</option><option value="depot">דיפו</option><option value="hotels">מלוניות</option></select></div><div class="fg"><label>סיכום</label><input id="af-o"></div><div class="fg"><label>פעולה הבאה</label><input id="af-n"></div></div>';
+  if (type === "airport") return '<div class="info info-ap" style="margin-bottom:8px">✈ 3 שעות | מלוניות + דיפו + בנייה + שירותי קרקע</div><div class="fgrid"><div class="fg"><label>תאריך *</label><input id="am-date" type="date" value="' + todayStr + '"></div><div class="fg"><label>שעה</label><input id="am-time" type="time" value="' + G("ap_time","10:00") + '"></div><div class="fg"><label>איש שטח</label><input id="am-agent"></div></div><div class="fgrid"><div class="fg"><label>מיקום</label><input id="am-loc" value="שדה תעופה בן גוריון"></div><div class="fg"><label>לקוחות מתוכננים</label><input id="am-clients" type="number" value="0"></div><div class="fg"><label>הכנסות צפויות (₪)</label><input id="am-rev" type="number" value="0"></div></div><div class="fg"><label>הערות</label><textarea id="am-notes"></textarea></div>';
+  if (type === "hotel-contact") return '<div class="fgrid"><div class="fg"><label>שם *</label><input id="hcf-n"></div><div class="fg"><label>חברה/תאגיד</label><input id="hcf-co"></div><div class="fg"><label>טלפון</label><input id="hcf-ph"></div><div class="fg"><label>כתובת מלונית</label><input id="hcf-a"></div></div><div class="fgrid"><div class="fg"><label>מחיר/לילה (₪)</label><input id="hcf-pp" type="number" value="' + G("hotel_price",200) + '"></div><div class="fg"><label>שלב</label><select id="hcf-s"><option value="new_lead">ליד חדש</option><option value="in_progress">בטיפול</option><option value="proposal">הצעת מחיר</option><option value="closed">נסגר</option></select></div></div>';
+  if (type === "hotel-order") return buildHotelOrderBody();
+  if (type === "depot-order") return buildDepotOrderBody();
+  return "";
+}
+
+function buildHotelOrderBody() {
+  var cOpts = D.contacts.filter(function(c) { return c.segment === "hotels"; }).map(function(c) {
+    return '<option value="' + c.name + "|" + (c.phone || "") + '">' + c.name + '</option>';
+  }).join("");
+  return '<div class="fgrid"><div class="fg"><label>בחר לקוח</label><select onchange="var p=this.value.split(\'|\');var n=document.getElementById(\'hof-n\');if(n)n.value=p[0]||\'\'"><option value="">— בחר —</option>' + cOpts + '</select></div><div class="fg"><label>שם לקוח</label><input id="hof-n"></div><div class="fg"><label>טלפון</label><input id="hof-p"></div></div>' +
+    '<div id="hrows">' + buildHRow(0) + '</div>' +
+    '<button onclick="addHRow()" style="width:100%;margin-bottom:7px;padding:4px;background:none;border:1px dashed #ddd;border-radius:6px;font-size:11px;color:#aaa;cursor:pointer">+ מלונית נוספת</button>' +
+    '<div style="background:#fffbeb;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;margin-bottom:7px"><span style="font-size:12px;color:#888">סה"כ</span><span style="font-size:18px;font-weight:bold;color:#d97706" id="hot-total">₪0</span></div>' +
+    '<div class="fg"><label>הערות</label><textarea id="hof-no" rows="2"></textarea></div>';
+}
+function buildHRow(i) {
+  return '<div class="hotel-row" id="hrow-' + i + '">' + (i > 0 ? '<div style="text-align:left;margin-bottom:3px"><button onclick="rmHRow(' + i + ')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa">× הסר</button></div>' : "") +
+    '<div class="fg" style="margin-bottom:5px"><label>כתובת מלונית</label><input id="hr-a-' + i + '" placeholder="כתובת..."></div>' +
+    '<div class="fgrid"><div class="fg"><label>כניסה</label><input id="hr-f-' + i + '" type="date" onchange="hCalcTotal()"></div><div class="fg"><label>לילות</label><input id="hr-n-' + i + '" type="number" min="1" value="1" oninput="hCalcTotal()"></div><div class="fg"><label>₪/לילה</label><input id="hr-p-' + i + '" type="number" value="' + G("hotel_price", 200) + '" oninput="hCalcTotal()"></div><div class="fg"><label>עובדים</label><input id="hr-w-' + i + '" type="number" value="1" oninput="hCalcTotal()"></div></div>' +
+    '<div style="font-size:10px;color:#0284c7;margin-top:2px" id="hr-s-' + i + '">סה"כ שורה: ₪0</div></div>';
+}
+function addHRow() { var w = document.getElementById("hrows"); var d = document.createElement("div"); d.innerHTML = buildHRow(hotelRC); w.appendChild(d.firstChild); hotelRC++; }
+function rmHRow(i) { var el = document.getElementById("hrow-" + i); if (el) el.remove(); hCalcTotal(); }
+function hCalcTotal() {
+  var total = 0;
+  for (var i = 0; i <= hotelRC; i++) {
+    var el = document.getElementById("hrow-" + i); if (!el) continue;
+    var n = parseFloat((document.getElementById("hr-n-" + i) || {}).value) || 1;
+    var p = parseFloat((document.getElementById("hr-p-" + i) || {}).value) || 0;
+    var w = parseFloat((document.getElementById("hr-w-" + i) || {}).value) || 1;
+    var line = n * p * w; total += line;
+    var sl = document.getElementById("hr-s-" + i);
+    if (sl) sl.textContent = 'סה"כ שורה: ₪' + Math.round(line).toLocaleString();
+  }
+  var tel = document.getElementById("hot-total");
+  if (tel) tel.textContent = "₪" + Math.round(total).toLocaleString();
+}
+
+function buildDepotOrderBody() {
+  var cOpts = D.contacts.map(function(c) { return '<option value="' + c.name + "|" + (c.phone || "") + '">' + c.name + '</option>'; }).join("");
+  var allI = []; D.pricelist.forEach(function(cat) { cat.items.forEach(function(it) { allI.push({ cat: cat.cat, n: it.n, p: it.p }); }); });
+  return '<div class="fgrid"><div class="fg"><label>לקוח</label><select onchange="var p=this.value.split(\'|\');var n=document.getElementById(\'dof-n\');if(n)n.value=p[0]||\'\'"><option value="">— בחר —</option>' + cOpts + '</select></div><div class="fg"><label>שם לקוח</label><input id="dof-n"></div><div class="fg"><label>טלפון</label><input id="dof-p"></div></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><label style="font-size:11px;font-weight:bold;color:#888">פריטים</label><button onclick="addDRow()" class="btn btn-gray btn-sm">+ פריט</button></div>' +
+    '<div id="drows"></div>' +
+    '<div style="background:#fffbeb;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;margin-bottom:7px"><span style="font-size:12px;color:#888">סה"כ</span><span style="font-size:18px;font-weight:bold;color:#d97706" id="dep-total">₪0</span></div>' +
+    '<div class="fg"><label>מהמחירון</label><select onchange="if(this.value){var p=this.value.split(\'|\');addDRow(p[0],p[1]);this.value=\'\'}" style="padding:6px 9px;border:1px solid #ddd;border-radius:6px;font-size:12px"><option value="">— הוסף מהמחירון —</option>' +
+    allI.map(function(it) { return '<option value="' + it.n + "|" + it.p + '">' + it.cat + " — " + it.n + (it.p ? " (₪" + it.p + ")" : " (לפי שירות)") + '</option>'; }).join("") +
+    '</select></div><div class="fg" style="margin-top:5px"><label>הערות</label><textarea id="dof-no" rows="2"></textarea></div>';
+}
+function addDRow(nm, pr) {
+  if (depotRC === 0) document.getElementById("drows").innerHTML = "";
+  var d = document.createElement("div"); d.className = "drow"; d.id = "drow-" + depotRC;
+  d.innerHTML = '<input id="dr-n-' + depotRC + '" placeholder="שם מוצר" value="' + (nm || "") + '" oninput="dCalc()"><input id="dr-q-' + depotRC + '" type="number" min="1" value="1" oninput="dCalc()"><input id="dr-p-' + depotRC + '" type="number" value="' + (pr || 0) + '" oninput="dCalc()"><div id="dr-l-' + depotRC + '" style="font-size:12px;font-weight:bold;color:#d97706">₪0</div><button onclick="rmDRow(' + depotRC + ')" style="background:none;border:none;cursor:pointer;font-size:15px;color:#aaa">×</button>';
+  document.getElementById("drows").appendChild(d); depotRC++; dCalc();
+}
+function rmDRow(i) { var el = document.getElementById("drow-" + i); if (el) el.remove(); dCalc(); }
+function dCalc() {
+  var total = 0;
+  for (var i = 0; i < depotRC; i++) {
+    var el = document.getElementById("drow-" + i); if (!el) continue;
+    var q = parseFloat((document.getElementById("dr-q-" + i) || {}).value) || 0;
+    var p = parseFloat((document.getElementById("dr-p-" + i) || {}).value) || 0;
+    var line = q * p; total += line;
+    var ld = document.getElementById("dr-l-" + i);
+    if (ld) ld.textContent = "₪" + Math.round(line).toLocaleString();
+  }
+  var tel = document.getElementById("dep-total");
+  if (tel) tel.textContent = "₪" + Math.round(total).toLocaleString();
+}
+
+// ===== SAVE FORM =====
+function saveForm(type, wrId) {
+  var u = uid();
+  if (type === "agreement") {
+    var t = document.getElementById("agf-t").value.trim(); if (!t) { alert("שם חובה"); return; }
+    D.agreements.push({ id:u, title:t, client:document.getElementById("agf-c").value, phone:document.getElementById("agf-p").value, amount:parseFloat(document.getElementById("agf-a").value)||0, stage:document.getElementById("agf-s").value, meet_scheduled:document.getElementById("agf-m").value, due_date:document.getElementById("agf-d").value, notes:document.getElementById("agf-n").value, created:todayStr });
+    if (document.getElementById("agf-s").value === "signed") D.kpis.d++;
+    sv(); document.getElementById(wrId).innerHTML = ""; renderAgreements();
+  } else if (type === "task") {
+    var t2 = document.getElementById("tf-t").value.trim(); if (!t2) { alert("כותרת חובה"); return; }
+    D.tasks.push({ id:u, title:t2, assigned:document.getElementById("tf-a").value, segment:document.getElementById("tf-s").value, status:document.getElementById("tf-st").value, due_date:document.getElementById("tf-due").value, notes:document.getElementById("tf-n").value, created:todayStr });
+    sv(); document.getElementById(wrId).innerHTML = ""; renderTasks(); updTB();
+  } else if (type === "activity") {
+    var s = document.getElementById("af-s").value.trim(); if (!s) { alert("נושא חובה"); return; }
+    var atp = document.getElementById("af-t").value;
+    D.activities.push({ id:u, type:atp, subject:s, contact:document.getElementById("af-c").value, date:document.getElementById("af-d").value||todayStr, segment:document.getElementById("af-sg").value, outcome:document.getElementById("af-o").value, next:document.getElementById("af-n").value, created:todayStr });
+    if (atp === "meeting") D.kpis.m++;
+    if (atp === "call") D.kpis.c++;
+    sv(); document.getElementById(wrId).innerHTML = ""; renderActivities(); renderDash(); updTB();
+  } else if (type === "airport") {
+    var dt = document.getElementById("am-date").value; if (!dt) { alert("תאריך חובה"); return; }
+    D.airportMeetings.push({ id:u, date:dt, time:document.getElementById("am-time").value, agent:document.getElementById("am-agent").value, location:document.getElementById("am-loc").value, clients:parseInt(document.getElementById("am-clients").value)||0, revenue:parseFloat(document.getElementById("am-rev").value)||0, notes:document.getElementById("am-notes").value, created:todayStr });
+    D.activities.push({ id:u+"_a", type:"airport", subject:"✈ שדה תעופה — "+dt, contact:document.getElementById("am-agent").value, date:dt, segment:"general", outcome:"", next:"", created:todayStr });
+    sv(); document.getElementById(wrId).innerHTML = ""; renderAirport(); renderDash(); updTB();
+    alert("פגישה נקבעה ✓ | " + dt);
+  } else if (type === "hotel-contact") {
+    var hn = document.getElementById("hcf-n").value.trim(); if (!hn) { alert("שם חובה"); return; }
+    D.contacts.push({ id:u, name:hn, company:document.getElementById("hcf-co").value, phone:document.getElementById("hcf-ph").value, segment:"hotels", stage:document.getElementById("hcf-s").value, hotel_address:document.getElementById("hcf-a").value, hotel_price_per_day:parseFloat(document.getElementById("hcf-pp").value)||0, created:todayStr });
+    sv(); document.getElementById(wrId).innerHTML = ""; renderHotels();
+  } else if (type === "hotel-order") {
+    var nm = document.getElementById("hof-n").value.trim() || "לקוח";
+    var items = []; var total = 0;
+    for (var i = 0; i <= hotelRC; i++) {
+      var el = document.getElementById("hrow-" + i); if (!el) continue;
+      var a = (document.getElementById("hr-a-" + i) || {}).value || "מלונית";
+      var n = parseFloat((document.getElementById("hr-n-" + i) || {}).value) || 1;
+      var p = parseFloat((document.getElementById("hr-p-" + i) || {}).value) || 0;
+      var w = parseFloat((document.getElementById("hr-w-" + i) || {}).value) || 1;
+      var f = (document.getElementById("hr-f-" + i) || {}).value || "";
+      var line = n * p * w; total += line;
+      items.push({ address:a, name:a, from_date:f, qty:n, unit_price:p, workers_count:w, line_total:line });
+    }
+    D.orders.push({ id:u, contact_name:nm, contact_phone:document.getElementById("hof-p").value, segment:"hotels", items:items, total:total, notes:document.getElementById("hof-no").value, status:"sent", created:todayStr });
+    D.kpis.p = (D.kpis.p || 0) + 1;
+    sv(); document.getElementById(wrId).innerHTML = ""; renderHotels(); renderDash();
+    alert("הזמנת מלונית נשמרה ✓ | ₪" + Math.round(total).toLocaleString());
+  } else if (type === "depot-order") {
+    var nm2 = document.getElementById("dof-n").value.trim() || "לקוח";
+    var items2 = []; var total2 = 0;
+    for (var i = 0; i < depotRC; i++) {
+      var el2 = document.getElementById("drow-" + i); if (!el2) continue;
+      var in2 = (document.getElementById("dr-n-" + i) || {}).value || "פריט";
+      var qty = parseFloat((document.getElementById("dr-q-" + i) || {}).value) || 0;
+      var pr = parseFloat((document.getElementById("dr-p-" + i) || {}).value) || 0;
+      var line2 = qty * pr; total2 += line2;
+      if (qty > 0) items2.push({ name:in2, qty:qty, unit_price:pr, line_total:line2 });
+    }
+    if (items2.length === 0) { alert("נא להוסיף לפחות פריט"); return; }
+    D.orders.push({ id:u, contact_name:nm2, contact_phone:document.getElementById("dof-p").value, segment:"depot", items:items2, total:total2, notes:document.getElementById("dof-no").value, status:"sent", created:todayStr });
+    D.kpis.p = (D.kpis.p || 0) + 1;
+    sv(); document.getElementById(wrId).innerHTML = ""; renderDepot(); renderDash();
+    alert("הזמנה נשמרה ✓ | ₪" + Math.round(total2).toLocaleString());
+  }
+}
+
+// ===== INIT =====
+renderDash();
+renderDaily();
+renderPlan();
+renderSettings();
+</script>
+</body>
+</html>
